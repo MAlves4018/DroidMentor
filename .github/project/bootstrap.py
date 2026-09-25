@@ -28,6 +28,33 @@ MANAGED_PREFIXES = (
     "M3-", "ORG-", "REL-", "OPT-",
 )
 
+EXPECTED_CUSTOM_FIELDS = {
+    "Stage", "Item Type", "Area", "Scope", "Priority", "Difficulty",
+    "Deliverable", "Owner", "Start Date", "End Date",
+}
+RESERVED_PROJECT_FIELDS = {
+    "Title", "Assignees", "Status", "Labels", "Linked pull requests",
+    "Milestone", "Repository", "Reviewers", "Parent issue",
+    "Sub-issues progress", "Created", "Updated", "Closed",
+}
+
+def preflight_config(cfg: dict[str, Any]) -> None:
+    fields = cfg.get("fields") or {}
+    names = set(fields)
+    if names != EXPECTED_CUSTOM_FIELDS:
+        missing = sorted(EXPECTED_CUSTOM_FIELDS - names)
+        extra = sorted(names - EXPECTED_CUSTOM_FIELDS)
+        raise RuntimeError(
+            f"Project schema mismatch before any GitHub writes. Missing={missing}, extra={extra}"
+        )
+    reserved = sorted(names.intersection(RESERVED_PROJECT_FIELDS))
+    if reserved:
+        raise RuntimeError(f"Custom Project fields collide with GitHub reserved fields: {reserved}")
+    for name, spec in fields.items():
+        if not (isinstance(spec, list) or spec in {"date", "number", "text"}):
+            raise RuntimeError(f"Unsupported Project field specification for {name!r}: {spec!r}")
+
+
 def is_managed_id(value: str) -> bool:
     if value.startswith(MANAGED_PREFIXES):
         return True
@@ -439,6 +466,10 @@ def main() -> int:
     project_owner = repo_owner if cfg.get("owner") in {None, "", "repository-owner"} else cfg["owner"]
 
 
+    # Fail fast locally before any GitHub mutation. This prevents partial
+    # bootstrap runs caused by schema/name mistakes.
+    preflight_config(cfg)
+
     wait_for_graphql_budget(force=True)
     project_no, project_id, created_project = ensure_project(repo_ref, project_owner, cfg["name"])
 
@@ -447,10 +478,13 @@ def main() -> int:
     ensure_project_link(project_no, project_owner, repo_ref)
 
     edit_project(project_no, project_owner, cfg)
+
+    # Create/verify Project fields before touching repository labels, milestones
+    # or issues. Field/schema errors therefore stop with minimal side effects.
+    field_map = ensure_fields(project_no, project_owner, cfg["fields"])
+
     ensure_labels(repo_ref, cfg["labels"])
     ensure_milestones(repo_ref, cfg["milestones"])
-
-    field_map = ensure_fields(project_no, project_owner, cfg["fields"])
 
     issues = existing_issues(repo_ref)
     managed_labels = [x["name"] for x in cfg["labels"]]
@@ -472,7 +506,6 @@ def main() -> int:
             "Priority": ("P0", "select"),
             "Deliverable": (d["id"], "select"),
             "Owner": ("Both", "select"),
-            "Review Owner": ("Both", "select"),
             "Start Date": (d["start_date"], "date"),
             "End Date": (d["end_date"], "date"),
         }, initialize_stage=True)
@@ -497,7 +530,6 @@ def main() -> int:
             "Priority": (b["priority"], "select"),
             "Deliverable": (b["deliverable"], "select"),
             "Owner": (b["lead"], "select"),
-            "Review Owner": (b["reviewer"], "select"),
             "Start Date": (b["start_date"], "date"),
             "End Date": (b["end_date"], "date"),
         }, initialize_stage=True)
@@ -519,7 +551,6 @@ def main() -> int:
             "Difficulty": (t["difficulty"], "number"),
             "Deliverable": (deliverable, "select"),
             "Owner": (t["owner"], "select"),
-            "Review Owner": (t["reviewer"], "select"),
         }, initialize_stage=True)
 
     for o in optional:

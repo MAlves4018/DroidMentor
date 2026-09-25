@@ -117,12 +117,25 @@ def main() -> int:
     for node in graph:
         visit(node)
 
-    if "Start Date" not in cfg["fields"] or "End Date" not in cfg["fields"]:
-        fail("Project must keep bundle/deliverable date fields")
-    if "Difficulty" not in cfg["fields"]:
-        fail("Project must contain Difficulty field")
-    if "Owner" not in cfg["fields"] or "Review Owner" not in cfg["fields"]:
-        fail("Project must contain full-name Owner/Review Owner fields")
+    expected_fields = {
+        "Stage", "Item Type", "Area", "Scope", "Priority", "Difficulty",
+        "Deliverable", "Owner", "Start Date", "End Date",
+    }
+    actual_fields = set(cfg["fields"])
+    if actual_fields != expected_fields:
+        fail(
+            f"unexpected Project custom fields: missing={sorted(expected_fields-actual_fields)}, "
+            f"extra={sorted(actual_fields-expected_fields)}"
+        )
+    forbidden_field_names = {
+        "Title", "Assignees", "Status", "Labels", "Linked pull requests",
+        "Milestone", "Repository", "Reviewers", "Reviewer", "Review Owner",
+        "Code Reviewer", "Parent issue", "Sub-issues progress", "Created",
+        "Updated", "Closed",
+    }
+    collisions = sorted(actual_fields.intersection(forbidden_field_names))
+    if collisions:
+        fail(f"reserved/risky Project custom field names present: {collisions}")
 
     # Notification-safety / automation guardrails.
     dependabot = ROOT / ".github" / "dependabot.yml"
@@ -139,6 +152,9 @@ def main() -> int:
         fail("project bootstrap workflow must remain manual-only")
 
     bootstrap_text = (PROJECT_DIR / "bootstrap.py").read_text(encoding="utf-8")
+    for risky in ['"Reviewer"', '"Review Owner"', '"Code Reviewer"']:
+        if risky in bootstrap_text:
+            fail(f"bootstrap contains removed reviewer Project field token: {risky}")
     forbidden_notification_actions = [
         "--add-assignee", "--remove-assignee", "--assignee",
         '"issue", "close"', '"issue", "reopen"',
