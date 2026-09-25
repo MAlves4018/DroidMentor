@@ -31,13 +31,13 @@ The Project data is synchronized automatically, but saved views are configured o
 - Layout: Table
 - Filter: `Item Type = Bundle`
 - Group by: Deliverable
-- Show: Stage, Area, Owner, Reviewer, Start Date, End Date
+- Show: Stage, Area, Owner, Reviewer Review Owner, Start Date, End Date
 
 ## Mandatory
 - Layout: Table
 - Filter: `Scope = Mandatory`
 - Group by: Deliverable
-- Show: Item Type, Stage, Area, Priority, Owner, Reviewer
+- Show: Item Type, Stage, Area, Priority, Owner, Reviewer Review Owner
 
 ## Optional Backlog
 - Layout: Table
@@ -48,4 +48,4 @@ The Project data is synchronized automatically, but saved views are configured o
 - Layout: Table
 - Filter: `Item Type = Task`
 - Group by: Owner
-- Show: Stage, Reviewer, Area, Priority, Difficulty, Parent issue
+- Show: Stage, Reviewer Review Owner, Area, Priority, Difficulty, Parent issue

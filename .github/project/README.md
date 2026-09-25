@@ -16,7 +16,7 @@ The bootstrap deliberately does **not**:
 - run on `push`, `pull_request`, `schedule`, `issues`, or `workflow_run` events;
 - configure Dependabot.
 
-Ownership and reviewer information is stored in Project custom fields. Native GitHub issue assignment should only be used later for the small number of tasks that are actively being worked on.
+Ownership and reviewer Owner information is stored in Project custom fields. Native GitHub issue assignment should only be used later for the small number of tasks that are actively being worked on.
 
 ## Recommended fresh-repository order
 
