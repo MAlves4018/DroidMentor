@@ -101,15 +101,75 @@ def repo_parts() -> tuple[str, str]:
     return tuple(value.split("/", 1))  # type: ignore[return-value]
 
 
-def ensure_project(owner: str, title: str) -> tuple[int, str]:
-    data = run(["gh", "project", "list", "--owner", owner, "--limit", "100", "--format", "json"], capture_json=True)
-    for project in data.get("projects", []):
-        if project.get("title") == title:
-            print(f"REUSE project #{project['number']} — {title}")
-            return int(project["number"]), str(project["id"])
-    created = run(["gh", "project", "create", "--owner", owner, "--title", title, "--format", "json"], capture_json=True)
+def linked_projects(repo_ref: str) -> list[dict[str, Any]]:
+    repo_owner, repo_name = repo_ref.split("/", 1)
+    query = r'''query($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    projectsV2(first: 100) {
+      nodes { id number title closed }
+    }
+  }
+}'''
+    data = run([
+        "gh", "api", "graphql",
+        "-f", f"query={query}",
+        "-f", f"owner={repo_owner}",
+        "-f", f"name={repo_name}",
+    ], capture_json=True)
+    repo = (data.get("data") or {}).get("repository") or {}
+    return ((repo.get("projectsV2") or {}).get("nodes") or [])
+
+
+def ensure_project(repo_ref: str, owner: str, title: str) -> tuple[int, str, bool]:
+    # 1) Prefer a same-title Project already linked to THIS repository.
+    # This is the normal retry path after the first successful link.
+    for project in linked_projects(repo_ref):
+        if project.get("title") == title and not project.get("closed", False):
+            print(f"REUSE linked project #{project['number']} — {title}")
+            return int(project["number"]), str(project["id"]), False
+
+    # 2) Recovery for a bootstrap that failed before linking (or for the
+    # previous bootstrap version): reuse exactly one same-title, open,
+    # zero-item Project. A non-empty unlinked Project is never adopted.
+    account = run([
+        "gh", "project", "list", "--owner", owner,
+        "--limit", "100", "--format", "json",
+    ], capture_json=True)
+    recoverable = []
+    for project in account.get("projects", []):
+        if project.get("title") != title or project.get("closed", False):
+            continue
+        item_count = ((project.get("items") or {}).get("totalCount"))
+        if item_count == 0:
+            recoverable.append(project)
+    if len(recoverable) == 1:
+        project = recoverable[0]
+        print(f"RECOVER empty unlinked project #{project['number']} — {title}")
+        return int(project["number"]), str(project["id"]), False
+    if len(recoverable) > 1:
+        nums = ", ".join(str(x.get("number")) for x in recoverable)
+        raise RuntimeError(
+            f"Multiple empty unlinked Projects named {title!r} exist ({nums}). "
+            "Delete the stale duplicates or link the intended Project to this repository, then rerun."
+        )
+
+    # 3) No safe candidate exists: create a genuinely fresh Project.
+    created = run([
+        "gh", "project", "create", "--owner", owner,
+        "--title", title, "--format", "json",
+    ], capture_json=True)
     after_mutation()
-    return int(created["number"]), str(created["id"])
+    print(f"CREATE fresh project #{created['number']} — {title}")
+    return int(created["number"]), str(created["id"]), True
+
+
+def ensure_project_link(project_no: int, owner: str, repo_ref: str) -> None:
+    link = run([
+        "gh", "project", "link", str(project_no),
+        "--owner", owner, "--repo", repo_ref,
+    ], allow_failure=True)
+    if link.returncode != 0 and "already" not in f"{link.stdout}\n{link.stderr}".lower():
+        raise subprocess.CalledProcessError(link.returncode, link.args, link.stdout, link.stderr)
 
 
 def edit_project(project_no: int, owner: str, cfg: dict[str, Any]) -> None:
@@ -380,16 +440,17 @@ def main() -> int:
 
 
     wait_for_graphql_budget(force=True)
-    project_no, project_id = ensure_project(project_owner, cfg["name"])
+    project_no, project_id, created_project = ensure_project(repo_ref, project_owner, cfg["name"])
+
+    # Link immediately. If a later step fails, a retry can discover and reuse
+    # this repo-specific Project instead of creating another one.
+    ensure_project_link(project_no, project_owner, repo_ref)
+
     edit_project(project_no, project_owner, cfg)
     ensure_labels(repo_ref, cfg["labels"])
     ensure_milestones(repo_ref, cfg["milestones"])
 
     field_map = ensure_fields(project_no, project_owner, cfg["fields"])
-
-    link = run(["gh", "project", "link", str(project_no), "--owner", project_owner, "--repo", repo_ref], allow_failure=True)
-    if link.returncode != 0 and "already" not in f"{link.stdout}\n{link.stderr}".lower():
-        raise subprocess.CalledProcessError(link.returncode, link.args, link.stdout, link.stderr)
 
     issues = existing_issues(repo_ref)
     managed_labels = [x["name"] for x in cfg["labels"]]
@@ -411,7 +472,7 @@ def main() -> int:
             "Priority": ("P0", "select"),
             "Deliverable": (d["id"], "select"),
             "Owner": ("Both", "select"),
-            "Reviewer": ("Both", "select"),
+            "Review Owner": ("Both", "select"),
             "Start Date": (d["start_date"], "date"),
             "End Date": (d["end_date"], "date"),
         }, initialize_stage=True)
@@ -436,7 +497,7 @@ def main() -> int:
             "Priority": (b["priority"], "select"),
             "Deliverable": (b["deliverable"], "select"),
             "Owner": (b["lead"], "select"),
-            "Reviewer": (b["reviewer"], "select"),
+            "Review Owner": (b["reviewer"], "select"),
             "Start Date": (b["start_date"], "date"),
             "End Date": (b["end_date"], "date"),
         }, initialize_stage=True)
@@ -458,7 +519,7 @@ def main() -> int:
             "Difficulty": (t["difficulty"], "number"),
             "Deliverable": (deliverable, "select"),
             "Owner": (t["owner"], "select"),
-            "Reviewer": (t["reviewer"], "select"),
+            "Review Owner": (t["reviewer"], "select"),
         }, initialize_stage=True)
 
     for o in optional:

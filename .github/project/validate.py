@@ -121,8 +121,8 @@ def main() -> int:
         fail("Project must keep bundle/deliverable date fields")
     if "Difficulty" not in cfg["fields"]:
         fail("Project must contain Difficulty field")
-    if "Owner" not in cfg["fields"] or "Reviewer" not in cfg["fields"]:
-        fail("Project must contain full-name Owner/Reviewer fields")
+    if "Owner" not in cfg["fields"] or "Review Owner" not in cfg["fields"]:
+        fail("Project must contain full-name Owner/Review Owner fields")
 
     # Notification-safety / automation guardrails.
     dependabot = ROOT / ".github" / "dependabot.yml"
