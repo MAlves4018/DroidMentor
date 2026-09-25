@@ -1,0 +1,41 @@
+name: Planned task
+description: Create a real unit of work that can be implemented, reviewed and tested as one result.
+title: "[TASK-ID] "
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What concrete result should exist when this task is complete?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and implementation guidance
+      description: Explain why the task exists, likely components/paths, important contracts, inputs/outputs and how it fits the surrounding work. Keep small implementation actions here instead of creating microtasks.
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: List only real blocking dependencies or relevant follow-up tasks.
+
+  - type: textarea
+    id: tests
+    attributes:
+      label: Verification
+      description: State the behaviours that must be proven. Avoid generic "add tests" wording.
+    validations:
+      required: true
+
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: Define the observable completion conditions for this task.
+    validations:
+      required: true

@@ -1,0 +1,125 @@
+name: DroidMentor — 2026/27 Delivery
+owner: repository-owner
+members:
+  Miguel Alves: MAlves4018
+  Martim Gomes: MarsGomes
+description: Semester roadmap and execution board for DroidMentor.
+project_readme: DroidMentor semester execution board. Deliverables contain weekly bundles; bundles contain outcome-sized implementation
+  tasks. Task status is runtime state; planning metadata is initialized from this repository definition during first setup.
+fields:
+  Stage:
+  - Backlog
+  - Ready
+  - In Progress
+  - Review
+  - Blocked
+  - Done
+  - Deferred
+  - Cut
+  Item Type:
+  - Deliverable
+  - Bundle
+  - Task
+  - Optional Backlog
+  Area:
+  - Repository & Planning
+  - UI
+  - Navigation & Local Chat
+  - Milestone Delivery
+  - Architecture
+  - Network & BYOK
+  - Gemini Chat
+  - Persistence & Offline
+  - Conversation Branching
+  - Search & Organization
+  - Selectable Reasoning
+  - Images & Files
+  - Release
+  - Projects / Workspaces
+  - Resource / Status UX
+  - Mobile Companion
+  Scope:
+  - Mandatory
+  - Committed Optional
+  - Target Optional
+  - Stretch
+  - Discovery
+  Priority:
+  - P0
+  - P1
+  - P2
+  Difficulty: number
+  Deliverable:
+  - DEL-001
+  - DEL-002
+  - DEL-003
+  - DEL-004
+  Owner:
+  - Miguel Alves
+  - Martim Gomes
+  - Both
+  Reviewer:
+  - Miguel Alves
+  - Martim Gomes
+  - Both
+  Start Date: date
+  End Date: date
+milestones:
+- title: mentor_1
+  due: '2026-09-21'
+  description: Repository, plan, ownership and README baseline
+- title: mentor_2
+  due: '2026-10-12'
+  description: First demonstrable baseline, video, README link and tag
+- title: mentor_3
+  due: '2026-11-16'
+  description: Integrated mandatory product, video, README link and tag
+- title: mentor_f
+  due: '2026-12-12'
+  description: Stable final release, final video, README link and tag
+labels:
+- name: mandatory
+  color: B60205
+  description: Mandatory assignment work
+- name: optional
+  color: C2E0C6
+  description: Optional or stretch product work
+- name: academic-milestone
+  color: 0052CC
+  description: Formal mentor milestone
+- name: bundle
+  color: 5319E7
+  description: Weekly execution bundle
+- name: planning
+  color: D4C5F9
+  description: Repository and planning
+- name: ui
+  color: C5DEF5
+  description: Compose UI, navigation and interaction
+- name: architecture
+  color: 7057FF
+  description: Application composition and boundaries
+- name: provider
+  color: D93F0B
+  description: Gemini, Ktor, BYOK and provider integration
+- name: persistence
+  color: 006B75
+  description: Room/DataStore/local persistence
+- name: branching
+  color: 1D76DB
+  description: Conversation branching
+- name: search
+  color: 0E8A16
+  description: Search and organization
+- name: reasoning
+  color: A371F7
+  description: Provider-gated reasoning
+- name: files-images
+  color: FBCA04
+  description: Images and attachment pipeline
+- name: verification
+  color: 1A7F37
+  description: Milestone verification and evidence
+- name: release
+  color: 0E8A16
+  description: Final release and publication

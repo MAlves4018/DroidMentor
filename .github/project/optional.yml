@@ -1,0 +1,129 @@
+optional_backlog:
+- id: OPT-001
+  title: Projects / Workspaces
+  scope: Stretch
+  priority: P2
+  area: Projects / Workspaces
+  status: Backlog
+  body: '## Purpose
+
+    Local grouping of conversations by project; project delete detaches conversations instead of deleting them.
+
+
+    ## Promotion gate
+
+    No calendar until explicitly promoted.
+
+
+    ## Implementation note
+
+    Would need model/repository/UI + tests; must not affect Gemini context.
+
+
+    ## Planning
+
+    - **Scope:** `Stretch`
+
+    - **Schedule:** `Not scheduled`
+
+    - **Priority:** `P2`
+
+    '
+  labels:
+  - optional
+- id: OPT-002
+  title: Rich Provider Status UX
+  scope: Stretch
+  priority: P2
+  area: Resource / Status UX
+  status: Backlog
+  body: '## Purpose
+
+    More detailed provider/resource status beyond truthful error/retry feedback.
+
+
+    ## Promotion gate
+
+    No calendar until explicitly promoted.
+
+
+    ## Implementation note
+
+    Only real provider data may be shown; no fake quota counters.
+
+
+    ## Planning
+
+    - **Scope:** `Stretch`
+
+    - **Schedule:** `Not scheduled`
+
+    - **Priority:** `P2`
+
+    '
+  labels:
+  - optional
+- id: OPT-003
+  title: Generic non-image files
+  scope: Stretch
+  priority: P2
+  area: Images & Files
+  status: Backlog
+  body: '## Purpose
+
+    Broaden attachment pipeline beyond image-first support.
+
+
+    ## Promotion gate
+
+    Only after FILE-002 is green and scope permits.
+
+
+    ## Implementation note
+
+    Reuse attachment/storage contracts; validate provider support before UI exposure.
+
+
+    ## Planning
+
+    - **Scope:** `Stretch`
+
+    - **Schedule:** `Not scheduled`
+
+    - **Priority:** `P2`
+
+    '
+  labels:
+  - optional
+- id: OPT-004
+  title: Mobile Companion
+  scope: Discovery
+  priority: P2
+  area: Mobile Companion
+  status: Backlog
+  body: '## Purpose
+
+    PC/companion integration, file access/MCP and multi-link concepts.
+
+
+    ## Promotion gate
+
+    Discovery only unless a separate GO decision is made.
+
+
+    ## Implementation note
+
+    No implementation during mandatory path.
+
+
+    ## Planning
+
+    - **Scope:** `Discovery`
+
+    - **Schedule:** `Not scheduled`
+
+    - **Priority:** `P2`
+
+    '
+  labels:
+  - optional

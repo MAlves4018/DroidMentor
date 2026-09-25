@@ -1,0 +1,210 @@
+deliverables:
+- id: DEL-001
+  title: mentor_1 — Repository, team identification, semester plan/ownership and formal mentor_1 tag.
+  milestone: mentor_1
+  class: Academic milestone
+  scope: Mandatory
+  start_date: '2026-09-19'
+  end_date: '2026-09-21'
+  status: Backlog
+  body: '## Outcome
+
+    Repository, team identification, semester plan/ownership and formal mentor_1 tag.
+
+
+    ## Planning
+
+    - **Milestone:** `mentor_1`
+
+    - **Scope:** `Mandatory`
+
+    - **Start:** `2026-09-19`
+
+    - **End:** `2026-09-21`
+
+
+    ## Key tasks
+
+    - `SETUP-001`
+
+    - `SETUP-002`
+
+    - `SETUP-003`
+
+
+    ## Evidence
+
+    mentor_1 tag + repository evidence
+
+    '
+  labels:
+  - academic-milestone
+  - mandatory
+- id: DEL-002
+  title: mentor_2 — First demonstrable app baseline with required screens, navigation/local chat behavior, verification story,
+    5–7 minute video and tag.
+  milestone: mentor_2
+  class: Academic milestone
+  scope: Mandatory
+  start_date: '2026-09-22'
+  end_date: '2026-10-12'
+  status: Backlog
+  body: '## Outcome
+
+    First demonstrable app baseline with required screens, navigation/local chat behavior, verification story, 5–7 minute
+    video and tag.
+
+
+    ## Planning
+
+    - **Milestone:** `mentor_2`
+
+    - **Scope:** `Mandatory`
+
+    - **Start:** `2026-09-22`
+
+    - **End:** `2026-10-12`
+
+
+    ## Key tasks
+
+    - `UI-001`
+
+    - `UI-002`
+
+    - `UI-003`
+
+    - `UI-004`
+
+    - `FLOW-001`
+
+    - `FLOW-002`
+
+    - `FLOW-003`
+
+    - `M2-001`
+
+    - `M2-002`
+
+
+    ## Evidence
+
+    mentor_2 video + README link + tag
+
+    '
+  labels:
+  - academic-milestone
+  - mandatory
+- id: DEL-003
+  title: mentor_3 — Complete mandatory product integrated across architecture, BYOK, Gemini, Room, offline and required lifecycle
+    behavior.
+  milestone: mentor_3
+  class: Academic milestone
+  scope: Mandatory
+  start_date: '2026-10-13'
+  end_date: '2026-11-16'
+  status: Backlog
+  body: '## Outcome
+
+    Complete mandatory product integrated across architecture, BYOK, Gemini, Room, offline and required lifecycle behavior.
+
+
+    ## Planning
+
+    - **Milestone:** `mentor_3`
+
+    - **Scope:** `Mandatory`
+
+    - **Start:** `2026-10-13`
+
+    - **End:** `2026-11-16`
+
+
+    ## Key tasks
+
+    - `ARCH-001`
+
+    - `ARCH-002`
+
+    - `NET-001`
+
+    - `NET-002`
+
+    - `GEM-001`
+
+    - `GEM-002`
+
+    - `DB-001`
+
+    - `DB-002`
+
+    - `DB-003`
+
+    - `M3-001`
+
+    - `M3-002`
+
+
+    ## Evidence
+
+    mentor_3 video + README link + tag
+
+    '
+  labels:
+  - academic-milestone
+  - mandatory
+- id: DEL-004
+  title: mentor_f — Stable final release with qualified retained optional features, atemporal documentation, final 5–7 minute
+    video and mentor_f tag.
+  milestone: mentor_f
+  class: Academic milestone
+  scope: Mandatory
+  start_date: '2026-11-17'
+  end_date: '2026-12-12'
+  status: Backlog
+  body: '## Outcome
+
+    Stable final release with qualified retained optional features, atemporal documentation, final 5–7 minute video and mentor_f
+    tag.
+
+
+    ## Planning
+
+    - **Milestone:** `mentor_f`
+
+    - **Scope:** `Mandatory final delivery`
+
+    - **Start:** `2026-11-17`
+
+    - **End:** `2026-12-12`
+
+
+    ## Key tasks
+
+    - `BR-001`
+
+    - `BR-002`
+
+    - `BR-003`
+
+    - `ORG-001`
+
+    - `RSN-001`
+
+    - `FILE-001`
+
+    - `FILE-002`
+
+    - `REL-001`
+
+    - `REL-002`
+
+
+    ## Evidence
+
+    final video + README + mentor_f tag
+
+    '
+  labels:
+  - academic-milestone
+  - mandatory

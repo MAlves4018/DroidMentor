@@ -1,0 +1,81 @@
+name: Bootstrap GitHub Project (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "validate = no writes; bootstrap = create/populate the fresh GitHub Project"
+        required: true
+        default: "validate"
+        type: choice
+        options:
+          - validate
+          - bootstrap
+      notifications_checked:
+        description: "I confirmed collaborators are not watching all issue activity (or have not been invited yet)"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: droidmentor-project-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  project:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install project tooling
+        run: python -m pip install --disable-pip-version-check pyyaml==6.0.2
+
+      - name: Validate declarative project and notification safety
+        run: python .github/project/validate.py
+
+      - name: Notification-safety preflight
+        if: inputs.mode == 'bootstrap'
+        shell: bash
+        run: |
+          if [ "${{ inputs.notifications_checked }}" != "true" ]; then
+            echo "Bootstrap blocked: invite collaborators after bootstrap, or confirm their Watch setting is not All Activity."
+            exit 1
+          fi
+
+      - name: Check PROJECT_TOKEN
+        if: inputs.mode == 'bootstrap'
+        shell: bash
+        env:
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+        run: |
+          if [ -z "$PROJECT_TOKEN" ]; then
+            echo "PROJECT_TOKEN is required for bootstrap mode."
+            exit 1
+          fi
+
+      - name: Pin GitHub CLI 2.101.0
+        if: inputs.mode == 'bootstrap'
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/gh.deb \
+            https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_linux_amd64.deb
+          sudo dpkg -i /tmp/gh.deb
+          gh --version
+
+      - name: Bootstrap GitHub Project
+        if: inputs.mode == 'bootstrap'
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          PROJECT_MUTATION_SLEEP_SECONDS: "0.15"
+          PROJECT_RATE_CHECK_EVERY: "40"
+          PROJECT_MIN_GRAPHQL_REMAINING: "250"
+        run: python .github/project/bootstrap.py

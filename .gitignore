@@ -1,0 +1,16 @@
+.gradle/
+.kotlin/
+build/
+**/build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+.env
+.env.*
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

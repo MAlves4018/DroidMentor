@@ -1,0 +1,750 @@
+bundles:
+- id: W0
+  title: Repository & Planning
+  week: Week 0
+  objective: 'Create the shared working baseline: repository access, durable project documentation, a buildable Android app
+    and the formal mentor_1 checkpoint.'
+  start_date: '2026-09-19'
+  end_date: '2026-09-21'
+  deliverable: DEL-001
+  scope: Mandatory
+  priority: P0
+  lead: Miguel Alves
+  reviewer: Martim Gomes
+  area: Repository & Planning
+  milestone: mentor_1
+  status: In Progress
+  body: '## Outcome
+
+    Create the shared working baseline: repository access, durable project documentation, a buildable Android app and the
+    formal mentor_1 checkpoint.
+
+
+    ## Planning
+
+    - **Week:** `Week 0`
+
+    - **Deliverable:** `DEL-001`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Lead:** `Miguel Alves`
+
+    - **Support:** `Martim Gomes`
+
+    - **Start:** `2026-09-19`
+
+    - **End:** `2026-09-21`
+
+
+    ## Entry criteria
+
+    Assignment requirements and GitHub repository are available.
+
+
+    ## Exit criteria
+
+    Both students and professor can access the repo; README is durable; Android baseline builds; plan/ownership is visible;
+    mentor_1 tag exists.
+
+
+    ## Checkpoint / video
+
+    21/09 mentor_1
+
+    '
+  labels:
+  - bundle
+  - mandatory
+- id: W1
+  title: UI Foundations
+  week: Week 1
+  objective: Establish shared Compose design primitives and implement the required UI surfaces early so later routing, provider
+    and persistence work plugs into known components and state contracts.
+  start_date: '2026-09-22'
+  end_date: '2026-09-27'
+  deliverable: DEL-002
+  scope: Mandatory
+  priority: P0
+  lead: Miguel Alves
+  reviewer: Martim Gomes
+  area: UI
+  milestone: mentor_2
+  status: Backlog
+  body: '## Outcome
+
+    Establish shared Compose design primitives and implement the required UI surfaces early so later routing, provider and
+    persistence work plugs into known components and state contracts.
+
+
+    ## Planning
+
+    - **Week:** `Week 1`
+
+    - **Deliverable:** `DEL-002`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Lead:** `Miguel Alves`
+
+    - **Support:** `Martim Gomes`
+
+    - **Start:** `2026-09-22`
+
+    - **End:** `2026-09-27`
+
+
+    ## Entry criteria
+
+    Android baseline builds.
+
+
+    ## Exit criteria
+
+    Shared scaffold/header/action/feedback primitives exist; Title, History, Active Chat, Settings and About render from explicit
+    state; feature controls already emit typed events even when backend behavior is not wired yet.
+
+
+    ## Checkpoint / video
+
+    UI baseline
+
+    '
+  labels:
+  - bundle
+  - mandatory
+- id: W2
+  title: Navigation & Local Chat
+  week: Week 2
+  objective: 'Make the app usable end-to-end with local/in-memory state: route between screens, select conversations and exercise
+    Active Chat/History behavior before network and database work.'
+  start_date: '2026-09-28'
+  end_date: '2026-10-04'
+  deliverable: DEL-002
+  scope: Mandatory
+  priority: P0
+  lead: Martim Gomes
+  reviewer: Miguel Alves
+  area: Navigation & Local Chat
+  milestone: mentor_2
+  status: Backlog
+  body: '## Outcome
+
+    Make the app usable end-to-end with local/in-memory state: route between screens, select conversations and exercise Active
+    Chat/History behavior before network and database work.
+
+
+    ## Planning
+
+    - **Week:** `Week 2`
+
+    - **Deliverable:** `DEL-002`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Lead:** `Martim Gomes`
+
+    - **Support:** `Miguel Alves`
+
+    - **Start:** `2026-09-28`
+
+    - **End:** `2026-10-04`
+
+
+    ## Entry criteria
+
+    Required UI surfaces are available.
+
+
+    ## Exit criteria
+
+    All required screens are reachable; new/open chat works locally; composer/edit entry points and history lifecycle rules
+    are testable without Gemini or Room.
+
+
+    ## Checkpoint / video
+
+    04/10 local demo
+
+    '
+  labels:
+  - bundle
+  - mandatory
+- id: W3
+  title: mentor_2 Demo
+  week: Week 3
+  objective: Stabilize the first demonstrable baseline and publish the formal mentor_2 evidence.
+  start_date: '2026-10-05'
+  end_date: '2026-10-12'
+  deliverable: DEL-002
+  scope: Mandatory
+  priority: P0
+  lead: Martim Gomes
+  reviewer: Miguel Alves
+  area: Milestone Delivery
+  milestone: mentor_2
+  status: Backlog
+  body: '## Outcome
+
+    Stabilize the first demonstrable baseline and publish the formal mentor_2 evidence.
+
+
+    ## Planning
+
+    - **Week:** `Week 3`
+
+    - **Deliverable:** `DEL-002`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Lead:** `Martim Gomes`
+
+    - **Support:** `Miguel Alves`
+
+    - **Start:** `2026-10-05`
+
+    - **End:** `2026-10-12`
+
+
+    ## Entry criteria
+
+    Local UI/navigation/chat flow works.
+
+
+    ## Exit criteria
+
+    Baseline smoke tests are green; decisions/verification are understandable; 5–7 minute video, README link and mentor_2
+    tag match the demonstrated build.
+
+
+    ## Checkpoint / video
+
+    05/10 monitoring; 12/10 mentor_2
+
+    '
+  labels:
+  - bundle
+  - mandatory
+- id: W4
+  title: App Architecture
+  week: Week 4
+  objective: Introduce only the architecture boundaries needed to connect UI, network and persistence cleanly.
+  start_date: '2026-10-13'
+  end_date: '2026-10-18'
+  deliverable: DEL-003
+  scope: Mandatory
+  priority: P0
+  lead: Miguel Alves
+  reviewer: Martim Gomes
+  area: Architecture
+  milestone: mentor_3
+  status: Backlog
+  body: '## Outcome
+
+    Introduce only the architecture boundaries needed to connect UI, network and persistence cleanly.
+
+
+    ## Planning
+
+    - **Week:** `Week 4`
+
+    - **Deliverable:** `DEL-003`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Lead:** `Miguel Alves`
+
+    - **Support:** `Martim Gomes`
+
+    - **Start:** `2026-10-13`
+
+    - **End:** `2026-10-18`
+
+
+    ## Entry criteria
+
+    mentor_2 baseline tagged.
+
+
+    ## Exit criteria
+
+    Application-level manual composition, repository/provider boundaries and stable ViewModel/state contracts exist without
+    unnecessary Gradle modules or DI frameworks.
+
+
+    ## Checkpoint / video
+
+    Architecture gate
+
+    '
+  labels:
+  - bundle
+  - mandatory
+- id: W5
+  title: Network & BYOK
+  week: Week 5
+  objective: Build the Gemini transport foundation and local BYOK configuration as testable services.
+  start_date: '2026-10-19'
+  end_date: '2026-10-25'
+  deliverable: DEL-003
+  scope: Mandatory
+  priority: P0
+  lead: Martim Gomes
+  reviewer: Miguel Alves
+  area: Network & BYOK
+  milestone: mentor_3
+  status: Backlog
+  body: '## Outcome
+
+    Build the Gemini transport foundation and local BYOK configuration as testable services.
+
+
+    ## Planning
+
+    - **Week:** `Week 5`
+
+    - **Deliverable:** `DEL-003`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Lead:** `Martim Gomes`
+
+    - **Support:** `Miguel Alves`
+
+    - **Start:** `2026-10-19`
+
+    - **End:** `2026-10-25`
+
+
+    ## Entry criteria
+
+    Architecture interfaces and test seams are available.
+
+
+    ## Exit criteria
+
+    Ktor/Kotlinx client can serialize Gemini requests, normalize failures and stop when offline; Settings stores/removes the
+    API key through DataStore.
+
+
+    ## Checkpoint / video
+
+    Network gate
+
+    '
+  labels:
+  - bundle
+  - mandatory
+- id: W6
+  title: Gemini Chat
+  week: Week 6
+  objective: Connect the Active Chat state machine to Gemini while keeping requests stateless and local history authoritative.
+  start_date: '2026-10-26'
+  end_date: '2026-11-01'
+  deliverable: DEL-003
+  scope: Mandatory
+  priority: P0
+  lead: Miguel Alves
+  reviewer: Martim Gomes
+  area: Gemini Chat
+  milestone: mentor_3
+  status: Backlog
+  body: '## Outcome
+
+    Connect the Active Chat state machine to Gemini while keeping requests stateless and local history authoritative.
+
+
+    ## Planning
+
+    - **Week:** `Week 6`
+
+    - **Deliverable:** `DEL-003`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Lead:** `Miguel Alves`
+
+    - **Support:** `Martim Gomes`
+
+    - **Start:** `2026-10-26`
+
+    - **End:** `2026-11-01`
+
+
+    ## Entry criteria
+
+    Network and BYOK foundations are green.
+
+
+    ## Exit criteria
+
+    A valid send builds a request from local history + system instruction, calls Gemini and renders a model response; loading/error/retry
+    behavior is deterministic and tested.
+
+
+    ## Checkpoint / video
+
+    Gemini E2E gate
+
+    '
+  labels:
+  - bundle
+  - mandatory
+- id: W7
+  title: Persistence & Offline
+  week: Week 7
+  objective: Replace temporary memory state with Room and make required chat lifecycle behavior durable.
+  start_date: '2026-11-02'
+  end_date: '2026-11-08'
+  deliverable: DEL-003
+  scope: Mandatory
+  priority: P0
+  lead: Martim Gomes
+  reviewer: Miguel Alves
+  area: Persistence & Offline
+  milestone: mentor_3
+  status: Backlog
+  body: '## Outcome
+
+    Replace temporary memory state with Room and make required chat lifecycle behavior durable.
+
+
+    ## Planning
+
+    - **Week:** `Week 7`
+
+    - **Deliverable:** `DEL-003`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Lead:** `Martim Gomes`
+
+    - **Support:** `Miguel Alves`
+
+    - **Start:** `2026-11-02`
+
+    - **End:** `2026-11-08`
+
+
+    ## Entry criteria
+
+    Gemini chat works in memory.
+
+
+    ## Exit criteria
+
+    Conversation/message history survives restart; stored chats are readable offline; resume/delete/edit-rewrite behavior
+    is transactional and provider context is rebuilt from persisted local state.
+
+
+    ## Checkpoint / video
+
+    Persistence gate
+
+    '
+  labels:
+  - bundle
+  - mandatory
+- id: W8
+  title: mentor_3 Integration
+  week: Week 8
+  objective: Qualify the complete mandatory product and publish the mentor_3 evidence.
+  start_date: '2026-11-09'
+  end_date: '2026-11-16'
+  deliverable: DEL-003
+  scope: Mandatory
+  priority: P0
+  lead: Miguel Alves
+  reviewer: Martim Gomes
+  area: Milestone Delivery
+  milestone: mentor_3
+  status: Backlog
+  body: '## Outcome
+
+    Qualify the complete mandatory product and publish the mentor_3 evidence.
+
+
+    ## Planning
+
+    - **Week:** `Week 8`
+
+    - **Deliverable:** `DEL-003`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Lead:** `Miguel Alves`
+
+    - **Support:** `Martim Gomes`
+
+    - **Start:** `2026-11-09`
+
+    - **End:** `2026-11-16`
+
+
+    ## Entry criteria
+
+    W4–W7 integrated.
+
+
+    ## Exit criteria
+
+    Mandatory flows pass clean-install/restart/offline/failure regression; mentor_3 video, README link and tag correspond
+    to the qualified build.
+
+
+    ## Checkpoint / video
+
+    09/11 monitoring; 16/11 mentor_3
+
+    '
+  labels:
+  - bundle
+  - mandatory
+- id: W9
+  title: Conversation Branching
+  week: Week 9
+  objective: Add non-destructive conversation alternatives only after the mandatory baseline is stable.
+  start_date: '2026-11-17'
+  end_date: '2026-11-23'
+  deliverable: DEL-004
+  scope: Committed Optional
+  priority: P1
+  lead: Miguel Alves
+  reviewer: Martim Gomes
+  area: Conversation Branching
+  milestone: mentor_f
+  status: Backlog
+  body: '## Outcome
+
+    Add non-destructive conversation alternatives only after the mandatory baseline is stable.
+
+
+    ## Planning
+
+    - **Week:** `Week 9`
+
+    - **Deliverable:** `DEL-004`
+
+    - **Scope:** `Committed Optional`
+
+    - **Priority:** `P1`
+
+    - **Lead:** `Miguel Alves`
+
+    - **Support:** `Martim Gomes`
+
+    - **Start:** `2026-11-17`
+
+    - **End:** `2026-11-23`
+
+
+    ## Entry criteria
+
+    mentor_3 mandatory gate green.
+
+
+    ## Exit criteria
+
+    Branch graph, active-path selection, persistence migration, edit/regenerate alternatives and branch controls work together
+    without losing the original conversation.
+
+
+    ## Checkpoint / video
+
+    Branching gate
+
+    '
+  labels:
+  - bundle
+  - optional
+- id: W10
+  title: Search & Reasoning
+  week: Week 10
+  objective: Add conversation organization and provider-gated reasoning without fragmenting either feature into small implementation
+    tasks.
+  start_date: '2026-11-24'
+  end_date: '2026-11-30'
+  deliverable: DEL-004
+  scope: Target Optional
+  priority: P1
+  lead: Martim Gomes
+  reviewer: Miguel Alves
+  area: null
+  milestone: mentor_f
+  status: Backlog
+  body: '## Outcome
+
+    Add conversation organization and provider-gated reasoning without fragmenting either feature into small implementation
+    tasks.
+
+
+    ## Planning
+
+    - **Week:** `Week 10`
+
+    - **Deliverable:** `DEL-004`
+
+    - **Scope:** `Target Optional`
+
+    - **Priority:** `P1`
+
+    - **Lead:** `Martim Gomes`
+
+    - **Support:** `Miguel Alves`
+
+    - **Start:** `2026-11-24`
+
+    - **End:** `2026-11-30`
+
+
+    ## Entry criteria
+
+    Core regression green; branching stable if retained.
+
+
+    ## Exit criteria
+
+    History can search/rename/pin conversations; reasoning controls appear and affect requests only when the provider genuinely
+    supports them.
+
+
+    ## Checkpoint / video
+
+    Optional gate
+
+    '
+  labels:
+  - bundle
+  - optional
+- id: W11
+  title: Images & Optional Polish
+  week: Week 11
+  objective: Implement the complete image-first attachment path and stop optional expansion at scope freeze.
+  start_date: '2026-12-01'
+  end_date: '2026-12-07'
+  deliverable: DEL-004
+  scope: Target Optional
+  priority: P1
+  lead: Martim Gomes
+  reviewer: Miguel Alves
+  area: Images & Files
+  milestone: mentor_f
+  status: Backlog
+  body: '## Outcome
+
+    Implement the complete image-first attachment path and stop optional expansion at scope freeze.
+
+
+    ## Planning
+
+    - **Week:** `Week 11`
+
+    - **Deliverable:** `DEL-004`
+
+    - **Scope:** `Target Optional`
+
+    - **Priority:** `P1`
+
+    - **Lead:** `Martim Gomes`
+
+    - **Support:** `Miguel Alves`
+
+    - **Start:** `2026-12-01`
+
+    - **End:** `2026-12-07`
+
+
+    ## Entry criteria
+
+    Mandatory and committed paths stable.
+
+
+    ## Exit criteria
+
+    Gallery/camera image -> app-private storage -> metadata persistence -> Active Chat preview -> Gemini request -> reopen/cleanup
+    is qualified; generic files remain out unless explicitly promoted.
+
+
+    ## Checkpoint / video
+
+    07/12 monitoring + scope freeze
+
+    '
+  labels:
+  - bundle
+  - optional
+- id: W12
+  title: Final Release
+  week: Week 12
+  objective: Freeze scope, qualify the release, fix defects and publish durable final evidence.
+  start_date: '2026-12-08'
+  end_date: '2026-12-12'
+  deliverable: DEL-004
+  scope: Mandatory
+  priority: P0
+  lead: Miguel Alves
+  reviewer: Martim Gomes
+  area: Release
+  milestone: mentor_f
+  status: Backlog
+  body: '## Outcome
+
+    Freeze scope, qualify the release, fix defects and publish durable final evidence.
+
+
+    ## Planning
+
+    - **Week:** `Week 12`
+
+    - **Deliverable:** `DEL-004`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Lead:** `Miguel Alves`
+
+    - **Support:** `Martim Gomes`
+
+    - **Start:** `2026-12-08`
+
+    - **End:** `2026-12-12`
+
+
+    ## Entry criteria
+
+    Scope frozen; no new features.
+
+
+    ## Exit criteria
+
+    No release-blocking defects remain; final README is atemporal; final 5–7 minute video and mentor_f tag match the stable
+    build.
+
+
+    ## Checkpoint / video
+
+    12/12 mentor_f
+
+    '
+  labels:
+  - bundle
+  - mandatory

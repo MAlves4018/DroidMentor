@@ -1,0 +1,2618 @@
+tasks:
+- id: SETUP-001
+  bundle: W0
+  order: 1
+  title: Establish the shared repository and project baseline
+  scope: Mandatory
+  priority: P0
+  difficulty: 3
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies: []
+  area: Repository & Planning
+  milestone: mentor_1
+  requirements: REQ-020, REQ-021, REQ-022
+  status: Ready
+  body: '## Outcome
+
+    Set up the repository as the single shared workspace instead of splitting setup into separate microtasks. Confirm Miguel
+    Alves (MAlves4018), Martim Gomes (MarsGomes) and the professor have the required access; keep the GitHub Project linked;
+    create the durable README structure and initial project metadata in the same pass. The README should explain what DroidMentor
+    is, who is building it, the technology stack, how to build/run it and where milestone evidence will live, without referring
+    to temporary handovers or internal planning versions.
+
+
+    ## Planning
+
+    - **Bundle:** `W0`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `3/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    None.
+
+
+    ## Likely package / path
+
+    Repository root; README.md; .github/; GitHub repository/project settings
+
+
+    ## Components / interfaces
+
+    Repository access, README structure, team section, project link, issue/PR templates if retained
+
+
+    ## Inputs → outputs
+
+    Inputs: assignment requirements + GitHub accounts. Outputs: shared repository with correct access and a durable entry-point
+    README.
+
+
+    ## Tests / verification
+
+    Verify both students can clone/push; professor access is correct; README names Miguel Alves (MAlves4018) and Martim Gomes
+    (MarsGomes) with placeholders for student number/email until filled; no dependency on external intermediate documents.
+
+
+    ## Done when
+
+    A new contributor can open the repo, understand the project and collaborate without additional setup notes. Repository/access/README
+    work is complete as one coherent setup result.
+
+
+    ## Requirements
+
+    REQ-020, REQ-021, REQ-022
+
+    '
+  labels:
+  - mandatory
+  - planning
+- id: SETUP-002
+  bundle: W0
+  order: 2
+  title: Create and verify the Android application baseline
+  scope: Mandatory
+  priority: P0
+  difficulty: 3
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - SETUP-001
+  area: Repository & Planning
+  milestone: mentor_1
+  requirements: REQ-001, REQ-003
+  status: Backlog
+  body: '## Outcome
+
+    Create the smallest buildable Android/Kotlin baseline that later tasks can extend. Keep a single :app module, DroidMentorApplication,
+    MainActivity and the Compose/theme skeleton. Kotlin source files may remain under app/src/main/java/isel/dei/pdm/droidmentor
+    because that is a standard Android source set name; do not rename it just to say ''kotlin''. Avoid Hilt/Dagger and avoid
+    adding libraries that are not yet needed.
+
+
+    ## Planning
+
+    - **Bundle:** `W0`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `3/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `SETUP-001`
+
+
+    ## Likely package / path
+
+    app/; app/src/main/java/isel/dei/pdm/droidmentor/; build.gradle.kts; settings.gradle.kts
+
+
+    ## Components / interfaces
+
+    DroidMentorApplication, MainActivity, Compose theme/root surface, Gradle configuration
+
+
+    ## Inputs → outputs
+
+    Inputs: clean repository. Outputs: app that syncs, builds and launches to a minimal Compose surface.
+
+
+    ## Tests / verification
+
+    Run Gradle sync, assembleDebug and one basic unit/instrumented smoke test; launch on the agreed emulator/device; verify
+    no unused DI or extra modules were introduced.
+
+
+    ## Done when
+
+    Both students can open the project in Android Studio and run the same baseline successfully.
+
+
+    ## Requirements
+
+    REQ-001, REQ-003
+
+    '
+  labels:
+  - mandatory
+  - planning
+- id: SETUP-003
+  bundle: W0
+  order: 3
+  title: Publish the mentor_1 planning checkpoint
+  scope: Mandatory
+  priority: P0
+  difficulty: 2
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - SETUP-001
+  - SETUP-002
+  area: Repository & Planning
+  milestone: mentor_1
+  requirements: REQ-019, REQ-022
+  status: Backlog
+  body: '## Outcome
+
+    Treat mentor_1 as one formal checkpoint rather than several administrative tasks. Confirm the semester bundles, task ownership,
+    priorities and dependencies are visible in the plan/GitHub Project; fill the team identifiers required by the assignment;
+    verify repository access; then create the mentor_1 tag only when the checkpoint represents the actual shared state.
+
+
+    ## Planning
+
+    - **Bundle:** `W0`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `2/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `SETUP-001`
+
+    - `SETUP-002`
+
+
+    ## Likely package / path
+
+    GitHub Project; README.md; repository tags
+
+
+    ## Components / interfaces
+
+    mentor_1 checklist, plan visibility, ownership review, formal tag
+
+
+    ## Inputs → outputs
+
+    Inputs: working repo + approved semester plan. Outputs: mentor_1 evidence state and tag.
+
+
+    ## Tests / verification
+
+    Check every mandatory requirement has planned coverage; every execution task has an owner/reviewer; README/team/access
+    requirements are visible; tag points to the reviewed commit.
+
+
+    ## Done when
+
+    mentor_1 can be demonstrated from the repository without explaining hidden spreadsheets or temporary documents.
+
+
+    ## Requirements
+
+    REQ-019, REQ-022
+
+    '
+  labels:
+  - mandatory
+  - planning
+- id: UI-001
+  bundle: W1
+  order: 1
+  title: Establish the shared Compose design system and reusable interaction primitives
+  scope: Mandatory
+  priority: P0
+  difficulty: 3
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - SETUP-002
+  area: UI
+  milestone: mentor_2
+  requirements: REQ-013
+  status: Backlog
+  body: '## Outcome
+
+    Create a small shared UI foundation before building individual screens so common visual and interaction patterns are implemented
+    once rather than being credited to one feature page. Define the theme tokens and reusable composables that will genuinely
+    appear in two or more screens: a common scaffold/header pattern, primary actions, an async submit/request action with
+    disabled and loading states, text-field variants, icon actions, and consistent loading/error/empty feedback. Keep these
+    composables presentation-only: they receive state and callbacks and must not know about navigation, Gemini, Room or DataStore.
+    Add previews/examples showing normal, disabled, loading and error states, but avoid abstract components that have no concrete
+    use in W1.
+
+
+    ## Planning
+
+    - **Bundle:** `W1`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `3/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `SETUP-002`
+
+
+    ## Likely package / path
+
+    app/src/main/java/isel/dei/pdm/droidmentor/ui/components/; ui/theme/
+
+
+    ## Components / interfaces
+
+    DroidMentorScaffold, AppHeader, PrimaryActionButton, AsyncSubmitButton, AppTextField/SecureTextField, IconActionButton,
+    InlineError/Loading/Empty feedback, spacing/typography tokens
+
+
+    ## Inputs → outputs
+
+    Inputs: immutable visual state, labels/content and typed callbacks. Outputs: reusable composables with stable semantics
+    that screen tasks can compose without duplicating styling or async-action behavior.
+
+
+    ## Tests / verification
+
+    Create previews for the shared states and focused Compose tests for enabled/disabled actions, loading behavior, header
+    slots, field semantics and visible error/empty feedback. Verify shared components do not access repositories, navigation
+    controllers or provider objects directly.
+
+
+    ## Done when
+
+    Active Chat, History, Title, Settings and About can be built from the same visual primitives without copy-pasting common
+    headers/buttons/feedback patterns, and the shared components remain backend-agnostic.
+
+
+    ## Requirements
+
+    REQ-013
+
+    '
+  labels:
+  - mandatory
+  - ui
+- id: UI-002
+  bundle: W1
+  order: 2
+  title: Implement the Active Chat page UI
+  scope: Mandatory
+  priority: P0
+  difficulty: 5
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - UI-001
+  area: UI
+  milestone: mentor_2
+  requirements: REQ-013, REQ-016
+  status: Backlog
+  body: '## Outcome
+
+    Implement the Active Chat Compose surface independently from Gemini and persistence, using the shared W1 design primitives
+    instead of redefining common headers/buttons/states. The page should render an ordered conversation with visually distinct
+    user/model turns, a multiline composer, a submit/send action, an edit entry point on eligible messages, an attachment
+    entry point, and explicit sending/loading/error states. Define screen-specific reusable components such as MessageBubble
+    and ChatComposer because they carry chat semantics. Model the screen through immutable state and typed actions so previews
+    and tests can reproduce empty, populated, sending and failure states. Edit/Add/Send controls may emit events before their
+    real backend behavior exists.
+
+
+    ## Planning
+
+    - **Bundle:** `W1`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `UI-001`
+
+
+    ## Likely package / path
+
+    app/src/main/java/isel/dei/pdm/droidmentor/ui/chat/
+
+
+    ## Components / interfaces
+
+    ActiveChatScreen, ActiveChatUiState, ActiveChatAction, MessageList, MessageBubble, ChatComposer, EditMessageAction, AddAttachmentAction;
+    reuse AppHeader and AsyncSubmitButton from UI-001
+
+
+    ## Inputs → outputs
+
+    Inputs: immutable ActiveChatUiState with messages, draft, sending/error flags and eligible actions. Outputs: typed UI
+    events such as DraftChanged, SendClicked, EditMessageClicked(messageId), AddAttachmentClicked and RetryClicked.
+
+
+    ## Tests / verification
+
+    Compose previews cover empty, populated, sending and error states. UI tests prove message order/role styling, empty-send
+    disabled behavior, draft entry, send action emission, edit control visibility for eligible messages, attachment action
+    emission and loading/error feedback. Verify provider/database logic is absent from composables.
+
+
+    ## Done when
+
+    Active Chat can be exercised entirely with fake state, already exposes the controls required by later functionality, and
+    later Gemini/Room/branching work can connect through state/actions without redesigning the page.
+
+
+    ## Requirements
+
+    REQ-013, REQ-016
+
+    '
+  labels:
+  - mandatory
+  - ui
+- id: UI-003
+  bundle: W1
+  order: 3
+  title: Implement the Chat History page UI
+  scope: Mandatory
+  priority: P0
+  difficulty: 3
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - UI-001
+  area: UI
+  milestone: mentor_2
+  requirements: REQ-013, REQ-015
+  status: Backlog
+  body: '## Outcome
+
+    Implement Chat History as its own meaningful screen result, reusing the shared scaffold/header/action/feedback components
+    from UI-001 instead of repeating work from Active Chat. Render conversation summaries with title and last activity, provide
+    open/delete actions, and reserve a clear search/organization area so later search/rename/pin functionality can be added
+    without redesign. Keep data fake/local at this stage; the page should emit typed actions and should not know whether conversations
+    eventually come from memory or Room.
+
+
+    ## Planning
+
+    - **Bundle:** `W1`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `3/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `UI-001`
+
+
+    ## Likely package / path
+
+    app/src/main/java/isel/dei/pdm/droidmentor/ui/history/
+
+
+    ## Components / interfaces
+
+    ChatHistoryScreen, HistoryUiState, HistoryAction, ConversationList, ConversationRow, HistorySearchField/organization slot,
+    DeleteConversationAction; reuse AppHeader/feedback primitives from UI-001
+
+
+    ## Inputs → outputs
+
+    Inputs: HistoryUiState containing conversation summaries, loading/empty/error state and optional query placeholder. Outputs:
+    OpenConversation(id), DeleteConversation(id), SearchChanged(query) and future organization events.
+
+
+    ## Tests / verification
+
+    Compose tests prove summaries render in supplied order, empty/loading/error states are visible, open/delete emit the correct
+    conversation ID, and the search/organization area can be shown without database logic. Verify common header/action styling
+    comes from UI-001 rather than duplicated composables.
+
+
+    ## Done when
+
+    History can be previewed and tested with fake summaries, exposes the interactions needed for routing/lifecycle work, and
+    later Room/search integration can replace the data source without restructuring the UI.
+
+
+    ## Requirements
+
+    REQ-013, REQ-015
+
+    '
+  labels:
+  - mandatory
+  - ui
+- id: UI-004
+  bundle: W1
+  order: 4
+  title: Implement the Title, Settings and About page UIs
+  scope: Mandatory
+  priority: P0
+  difficulty: 3
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - UI-001
+  area: UI
+  milestone: mentor_2
+  requirements: REQ-006, REQ-013
+  status: Backlog
+  body: '## Outcome
+
+    Build the three simpler required surfaces as one task because they do not justify separate execution units. Title should
+    expose the main entry actions (new chat, history, settings, about); Settings should provide a masked/revealable Gemini
+    API-key field with Save/Remove actions and a reserved provider-capability/reasoning area; About should present durable
+    project/team information. Reuse the shared header, buttons, fields and feedback patterns from UI-001. At this stage controls
+    emit events only: navigation is wired in FLOW-001, API-key persistence in NET-002 and reasoning capability in RSN-001.
+
+
+    ## Planning
+
+    - **Bundle:** `W1`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `3/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `UI-001`
+
+
+    ## Likely package / path
+
+    app/src/main/java/isel/dei/pdm/droidmentor/ui/title/; ui/settings/; ui/about/
+
+
+    ## Components / interfaces
+
+    TitleScreen/State/Action, SettingsScreen/State/Action, AboutScreen, home destination actions, ApiKeyField, Save/Remove
+    actions, provider capability slot, project/team info sections
+
+
+    ## Inputs → outputs
+
+    Inputs: static project/team content plus SettingsUiState/API-key draft. Outputs: NewChat/History/Settings/About navigation
+    intents and ApiKeyChanged/SaveKey/RemoveKey/provider-option actions.
+
+
+    ## Tests / verification
+
+    Compose tests cover presence of all Title destinations, masked/revealed key input, Save/Remove action emission, configured/unconfigured
+    Settings states and durable About/team content. Verify these screens reuse UI-001 primitives and contain no navigation,
+    DataStore or provider implementation.
+
+
+    ## Done when
+
+    All three screens are concrete and testable UI surfaces, their later routing/settings/reasoning integrations have stable
+    action contracts, and no separate microtasks are needed for their individual buttons or text sections.
+
+
+    ## Requirements
+
+    REQ-006, REQ-013
+
+    '
+  labels:
+  - mandatory
+  - ui
+- id: FLOW-001
+  bundle: W2
+  order: 1
+  title: Wire application routing and conversation selection
+  scope: Mandatory
+  priority: P0
+  difficulty: 3
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - UI-002
+  - UI-003
+  - UI-004
+  area: Navigation & Local Chat
+  milestone: mentor_2
+  requirements: REQ-013
+  status: Backlog
+  body: '## Outcome
+
+    Connect the five required screens through one coherent navigation result, using the actions already exposed by the W1
+    UIs. Define stable route arguments around ConversationId rather than passing mutable screen objects. Title must open new-chat/history/settings/about
+    destinations; History must open a selected conversation; Active Chat must preserve conversation identity across back navigation.
+    Keep routing separate from repository/provider implementation so later Room/Gemini work can replace data sources without
+    changing destinations.
+
+
+    ## Planning
+
+    - **Bundle:** `W2`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `3/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `UI-002`
+
+    - `UI-003`
+
+    - `UI-004`
+
+
+    ## Likely package / path
+
+    navigation/; domain/model/identity/; ui/*
+
+
+    ## Components / interfaces
+
+    typed route definitions, NavHost/navigation coordinator, ConversationId, destination resolver/back-stack rules
+
+
+    ## Inputs → outputs
+
+    Inputs: navigation actions from Title/History/Active Chat and selected ConversationId. Outputs: deterministic destination/back-stack
+    state and stable conversation identity passed to the receiving screen.
+
+
+    ## Tests / verification
+
+    Navigation tests cover Title -> new Active Chat, Title -> History/Settings/About, History row -> selected Active Chat
+    and sensible back behavior. Verify routing passes stable IDs only and creating/opening one conversation cannot accidentally
+    replace another.
+
+
+    ## Done when
+
+    Every required screen is reachable through the intended user path and History can select a conversation for Active Chat
+    without coupling navigation to in-memory/Room/Gemini implementations.
+
+
+    ## Requirements
+
+    REQ-013
+
+    '
+  labels:
+  - mandatory
+  - ui
+- id: FLOW-002
+  bundle: W2
+  order: 2
+  title: Implement local Active Chat interaction and conversation state
+  scope: Mandatory
+  priority: P0
+  difficulty: 4
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - UI-002
+  - FLOW-001
+  area: Navigation & Local Chat
+  milestone: mentor_2
+  requirements: REQ-007, REQ-008, REQ-013, REQ-016
+  status: Backlog
+  body: '## Outcome
+
+    Turn the Active Chat UI into a real local state machine before Gemini or Room are introduced. Define the domain conversation/message
+    model required by chat behavior, including stable IDs, deterministic order and explicit user/model roles. Handle draft
+    changes, valid local sends, duplicate-send protection and the mandatory edit/rewrite rule against in-memory state. Keep
+    the same state/action boundary from UI-002 so later provider/persistence integration replaces effects rather than rewriting
+    the composables.
+
+
+    ## Planning
+
+    - **Bundle:** `W2`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `4/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `UI-002`
+
+    - `FLOW-001`
+
+
+    ## Likely package / path
+
+    domain/model/; domain/chat/; ui/chat/
+
+
+    ## Components / interfaces
+
+    Conversation, Message, Role, ActiveChatViewModel/reducer/state holder, local send operation, edit/rewrite operation
+
+
+    ## Inputs → outputs
+
+    Inputs: typed ActiveChatAction events and selected ConversationId. Outputs: immutable ActiveChatUiState, ordered local
+    messages and explicit one-shot effects/errors where needed.
+
+
+    ## Tests / verification
+
+    Pure/state tests cover stable IDs, deterministic order/roles, draft changes, empty send rejection, repeated-send guard,
+    user-message insertion, edit of first/middle/latest eligible user messages and suffix replacement without touching unrelated
+    conversations.
+
+
+    ## Done when
+
+    Active Chat behaves correctly against local/fake data and exposes stable conversation/message contracts that Gemini and
+    Room can implement later.
+
+
+    ## Requirements
+
+    REQ-007, REQ-008, REQ-013, REQ-016
+
+    '
+  labels:
+  - mandatory
+  - ui
+- id: FLOW-003
+  bundle: W2
+  order: 3
+  title: 'Implement local History lifecycle: new, open, delete and resume'
+  scope: Mandatory
+  priority: P0
+  difficulty: 3
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - UI-003
+  - FLOW-001
+  - FLOW-002
+  area: Navigation & Local Chat
+  milestone: mentor_2
+  requirements: REQ-014, REQ-015
+  status: Backlog
+  body: '## Outcome
+
+    Complete the local conversation lifecycle around Title/History/Active Chat. Define how a new conversation becomes active,
+    how History opens one, how delete updates the list/active selection, and what the app should try to resume on startup.
+    Keep storage in memory for now, but put the behavior behind a small repository/state boundary so Room can replace it later
+    without rewriting screen logic.
+
+
+    ## Planning
+
+    - **Bundle:** `W2`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `3/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `UI-003`
+
+    - `FLOW-001`
+
+    - `FLOW-002`
+
+
+    ## Likely package / path
+
+    domain/repository/; ui/history/; navigation/; data/inmemory/
+
+
+    ## Components / interfaces
+
+    temporary in-memory ConversationRepository, History state holder, active-conversation resolver, new/open/delete/resume
+    operations
+
+
+    ## Inputs → outputs
+
+    Inputs: new/open/delete/startup events. Outputs: active conversation ID, history list and safe fallback destination.
+
+
+    ## Tests / verification
+
+    Tests cover multiple conversations, delete only target chat, deleting the active chat, opening a missing chat, startup
+    with valid/missing/no active conversation and History refresh after changes.
+
+
+    ## Done when
+
+    The complete mandatory local lifecycle is demonstrable before adding Room, with semantics already fixed for the persistence
+    task.
+
+
+    ## Requirements
+
+    REQ-014, REQ-015
+
+    '
+  labels:
+  - mandatory
+  - ui
+- id: M2-001
+  bundle: W3
+  order: 1
+  title: Stabilize and verify the mentor_2 demonstrable baseline
+  scope: Mandatory
+  priority: P0
+  difficulty: 3
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - FLOW-001
+  - FLOW-002
+  - FLOW-003
+  area: Milestone Delivery
+  milestone: mentor_2
+  requirements: REQ-023
+  status: Backlog
+  body: '## Outcome
+
+    Treat verification as part of the result rather than splitting every smoke check into issues. Exercise the current UI/navigation/local-chat
+    product as a coherent demo, fix obvious defects, record the key design decisions made so far and define a short repeatable
+    verification path that both students can run before recording.
+
+
+    ## Planning
+
+    - **Bundle:** `W3`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `3/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `FLOW-001`
+
+    - `FLOW-002`
+
+    - `FLOW-003`
+
+
+    ## Likely package / path
+
+    test/; androidTest/; milestone notes in repository/GitHub issue
+
+
+    ## Components / interfaces
+
+    mentor_2 smoke/regression scenario, decision summary, known-limitations list
+
+
+    ## Inputs → outputs
+
+    Inputs: W1–W2 build. Outputs: stable demonstrable baseline + repeatable verification scenario.
+
+
+    ## Tests / verification
+
+    Run Title -> New Chat -> local send/edit -> History -> reopen/delete -> Settings/About on a clean state. Any known limitation
+    shown in the video must be explicit rather than hidden.
+
+
+    ## Done when
+
+    Both students can reproduce the same mentor_2 scenario without manual repair or undocumented steps.
+
+
+    ## Requirements
+
+    REQ-023
+
+    '
+  labels:
+  - mandatory
+  - verification
+- id: M2-002
+  bundle: W3
+  order: 2
+  title: Publish mentor_2 evidence and tag
+  scope: Mandatory
+  priority: P0
+  difficulty: 2
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - M2-001
+  - SETUP-001
+  area: Milestone Delivery
+  milestone: mentor_2
+  requirements: REQ-019, REQ-023
+  status: Backlog
+  body: '## Outcome
+
+    Create the complete mentor_2 delivery package as one task: record the required 5–7 minute demo, add the durable video
+    link/evidence location to the README, verify decisions/verification strategy are understandable and create the mentor_2
+    tag on the exact demonstrated commit. Do not turn the permanent README into a week-by-week status log.
+
+
+    ## Planning
+
+    - **Bundle:** `W3`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `2/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `M2-001`
+
+    - `SETUP-001`
+
+
+    ## Likely package / path
+
+    README.md; repository tag; video hosting
+
+
+    ## Components / interfaces
+
+    5–7 minute video, README evidence link, mentor_2 tag
+
+
+    ## Inputs → outputs
+
+    Inputs: verified mentor_2 build/scenario. Outputs: externally reviewable milestone evidence.
+
+
+    ## Tests / verification
+
+    Check video length/audio/readability; README link works; tagged commit reproduces the demo; project/build sections remain
+    atemporal.
+
+
+    ## Done when
+
+    A reviewer can open the repo, find the mentor_2 evidence and run the same tagged baseline.
+
+
+    ## Requirements
+
+    REQ-019, REQ-023
+
+    '
+  labels:
+  - mandatory
+  - verification
+- id: ARCH-001
+  bundle: W4
+  order: 1
+  title: Introduce the application composition and domain boundaries
+  scope: Mandatory
+  priority: P0
+  difficulty: 4
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - M2-002
+  - FLOW-001
+  area: Architecture
+  milestone: mentor_3
+  requirements: REQ-001, REQ-003, REQ-005
+  status: Backlog
+  body: '## Outcome
+
+    Create the minimum architecture needed for real services without over-engineering. Use DroidMentorApplication as the manual
+    composition root/service locator; define interfaces such as ConversationRepository, SettingsRepository and MentorProvider
+    plus only the focused use cases actually needed by current flows. Keep everything inside the single app module and package
+    by responsibility rather than creating new Gradle modules.
+
+
+    ## Planning
+
+    - **Bundle:** `W4`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `4/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `M2-002`
+
+    - `FLOW-001`
+
+
+    ## Likely package / path
+
+    DroidMentorApplication.kt; domain/repository/; domain/usecase/; data/repository/
+
+
+    ## Components / interfaces
+
+    manual service locator, ConversationRepository, SettingsRepository, MentorProvider, core use cases
+
+
+    ## Inputs → outputs
+
+    Inputs: existing local UI/domain contracts. Outputs: injectable app services/interfaces consumed by presentation logic.
+
+
+    ## Tests / verification
+
+    Unit tests use simple fakes for interfaces; app startup resolves all dependencies; verify no Hilt/Dagger and no UI class
+    imports Ktor/Room implementations directly.
+
+
+    ## Done when
+
+    Network and persistence can be added behind stable boundaries without restructuring the UI or creating extra modules.
+
+
+    ## Requirements
+
+    REQ-001, REQ-003, REQ-005
+
+    '
+  labels:
+  - mandatory
+  - architecture
+- id: ARCH-002
+  bundle: W4
+  order: 2
+  title: Move screen behavior to testable ViewModel/state contracts
+  scope: Mandatory
+  priority: P0
+  difficulty: 4
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - ARCH-001
+  - FLOW-002
+  - FLOW-003
+  area: Architecture
+  milestone: mentor_3
+  requirements: REQ-013
+  status: Backlog
+  body: '## Outcome
+
+    Replace temporary screen-local state where needed with immutable UI state and typed actions/events coordinated by ViewModels
+    (or equivalent lifecycle-aware presentation controllers). Keep composables as renderers/event emitters. Consolidate reusable
+    fakes and test fixtures here instead of creating a separate testing-infrastructure task.
+
+
+    ## Planning
+
+    - **Bundle:** `W4`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `4/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `ARCH-001`
+
+    - `FLOW-002`
+
+    - `FLOW-003`
+
+
+    ## Likely package / path
+
+    ui/*/*ViewModel.kt; ui/*/*UiState.kt; test/fakes/
+
+
+    ## Components / interfaces
+
+    Active Chat, History, Settings and any required Title state holders; deterministic fake repositories/provider
+
+
+    ## Inputs → outputs
+
+    Inputs: UI actions + repository/provider/use-case results. Outputs: immutable UI state and one-off navigation/effect signals
+    where necessary.
+
+
+    ## Tests / verification
+
+    State-transition tests cover main user actions, loading/error state, deletion/resume and settings changes using fakes.
+    Compose tests should remain able to render states without real services.
+
+
+    ## Done when
+
+    Presentation logic is independently testable and ready to swap fake services for real DataStore/Ktor/Room implementations.
+
+
+    ## Requirements
+
+    REQ-013
+
+    '
+  labels:
+  - mandatory
+  - architecture
+- id: NET-001
+  bundle: W5
+  order: 1
+  title: Implement the Gemini transport foundation
+  scope: Mandatory
+  priority: P0
+  difficulty: 5
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - ARCH-001
+  area: Network & BYOK
+  milestone: mentor_3
+  requirements: REQ-002, REQ-004, REQ-009, REQ-011, REQ-012
+  status: Backlog
+  body: '## Outcome
+
+    Build the complete transport boundary as one coherent result instead of separate tasks for client, DTOs, connectivity
+    and errors. Configure Ktor + Kotlinx Serialization, model the generateContent request/response DTOs and role/content mapping,
+    add a ConnectivityChecker used before requests, and normalize auth/429/5xx/timeout/transport/protocol failures into an
+    app-level ProviderFailure model while preserving cancellation. Use a Ktor test engine/fixtures so payloads and failures
+    are deterministic.
+
+
+    ## Planning
+
+    - **Bundle:** `W5`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `ARCH-001`
+
+
+    ## Likely package / path
+
+    data/remote/gemini/; platform/connectivity/
+
+
+    ## Components / interfaces
+
+    Ktor client factory, JSON config, Gemini DTOs/mappers, ConnectivityChecker, ProviderFailure/error mapper
+
+
+    ## Inputs → outputs
+
+    Inputs: provider request model + API key. Outputs: decoded Gemini response or typed ProviderFailure; no HTTP call when
+    clearly offline.
+
+
+    ## Tests / verification
+
+    Fixture tests cover serialization/deserialization, user/model role mapping, system-instruction field support, offline
+    no-request behavior, 429 Retry-After, auth, 500/503, timeout, malformed payload and cancellation.
+
+
+    ## Done when
+
+    The transport layer is testable without UI and exposes one clean provider-facing boundary for Gemini integration.
+
+
+    ## Requirements
+
+    REQ-002, REQ-004, REQ-009, REQ-011, REQ-012
+
+    '
+  labels:
+  - mandatory
+  - provider
+- id: NET-002
+  bundle: W5
+  order: 2
+  title: Implement BYOK storage and Settings behavior
+  scope: Mandatory
+  priority: P0
+  difficulty: 3
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - ARCH-001
+  - ARCH-002
+  - UI-004
+  area: Network & BYOK
+  milestone: mentor_3
+  requirements: REQ-006
+  status: Backlog
+  body: '## Outcome
+
+    Persist the user''s Gemini API key locally with DataStore and connect the Settings UI to a SettingsRepository/ViewModel
+    contract. Save/remove/read must be explicit; the key must never be stored in Room conversation rows or logged. Keep validation
+    pragmatic (for example non-blank/local format checks) and let real provider authentication failures remain provider failures.
+
+
+    ## Planning
+
+    - **Bundle:** `W5`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `3/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `ARCH-001`
+
+    - `ARCH-002`
+
+    - `UI-004`
+
+
+    ## Likely package / path
+
+    data/settings/; ui/settings/
+
+
+    ## Components / interfaces
+
+    DataStore-backed SettingsRepository, SettingsViewModel, masked key state, Save/Remove actions
+
+
+    ## Inputs → outputs
+
+    Inputs: user-entered key. Outputs: configured/unconfigured local settings state and key retrieval for MentorProvider calls.
+
+
+    ## Tests / verification
+
+    Tests cover save/read/remove/restart behavior, configured-state UI and absence of key data from conversation persistence/log
+    output.
+
+
+    ## Done when
+
+    A user can configure or remove BYOK through Settings and the provider layer can obtain the current key through the repository
+    boundary.
+
+
+    ## Requirements
+
+    REQ-006
+
+    '
+  labels:
+  - mandatory
+  - provider
+- id: GEM-001
+  bundle: W6
+  order: 1
+  title: Implement the stateless Gemini conversation adapter
+  scope: Mandatory
+  priority: P0
+  difficulty: 5
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - NET-001
+  - NET-002
+  - FLOW-001
+  area: Gemini Chat
+  milestone: mentor_3
+  requirements: REQ-002, REQ-007, REQ-008, REQ-009
+  status: Backlog
+  body: '## Outcome
+
+    Implement MentorProvider around the transport foundation and make local conversation state the only source of request
+    context. Build every request from the selected ordered local user/model history plus the Android mentor system instruction
+    and the current BYOK key, then call the required Gemini generateContent endpoint. Keep provider-specific DTOs/mapping
+    inside data/remote/gemini; expose domain-level response content/failure. Structure the response contract so later streaming
+    can be added without rewriting the Active Chat UI.
+
+
+    ## Planning
+
+    - **Bundle:** `W6`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `NET-001`
+
+    - `NET-002`
+
+    - `FLOW-001`
+
+
+    ## Likely package / path
+
+    data/remote/gemini/; domain/provider/
+
+
+    ## Components / interfaces
+
+    GeminiMentorProvider, request builder/history mapper, system instruction source
+
+
+    ## Inputs → outputs
+
+    Inputs: Conversation/messages + key + provider options. Outputs: model content (or domain response events) / ProviderFailure.
+
+
+    ## Tests / verification
+
+    Inspect outbound request bodies in tests: correct role order, complete history, system instruction, new/empty conversation
+    behavior and no hidden remote session ID/state. Happy-path adapter test uses Ktor test engine.
+
+
+    ## Done when
+
+    Any conversation can reconstruct its provider request solely from local state and produce a domain response without UI
+    knowing Ktor/Gemini DTO details.
+
+
+    ## Requirements
+
+    REQ-002, REQ-007, REQ-008, REQ-009
+
+    '
+  labels:
+  - mandatory
+  - provider
+- id: GEM-002
+  bundle: W6
+  order: 2
+  title: Connect Active Chat to Gemini responses and failures
+  scope: Mandatory
+  priority: P0
+  difficulty: 5
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - ARCH-002
+  - GEM-001
+  - NET-001
+  area: Gemini Chat
+  milestone: mentor_3
+  requirements: REQ-001, REQ-002, REQ-011, REQ-012, REQ-013
+  status: Backlog
+  body: '## Outcome
+
+    Replace the local fake-send hook with the real MentorProvider/use-case flow while keeping the UI contract stable. On send,
+    commit exactly one user turn, show sending/thinking state, prevent duplicate submissions, invoke the provider, render
+    the returned model message and expose a retryable error state without inventing an assistant message on failure. If incremental/streaming
+    responses are enabled later, update the same state progressively rather than creating a separate UI architecture.
+
+
+    ## Planning
+
+    - **Bundle:** `W6`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `ARCH-002`
+
+    - `GEM-001`
+
+    - `NET-001`
+
+
+    ## Likely package / path
+
+    ui/chat/; domain/usecase/; data/remote/gemini/
+
+
+    ## Components / interfaces
+
+    send-message use case, ActiveChatViewModel integration, loading/thinking/error/retry state
+
+
+    ## Inputs → outputs
+
+    Inputs: SendClicked + draft/current conversation. Outputs: updated message list, model response or typed UI error/retry
+    action.
+
+
+    ## Tests / verification
+
+    Tests cover success, offline, 429/5xx/timeout, retry, double-send prevention, cancellation, response rendering and no
+    duplicate/fake turns. Provider request inspection confirms current local history is used.
+
+
+    ## Done when
+
+    A user can have a real stateless Gemini conversation from Active Chat with deterministic loading/error/retry behavior.
+
+
+    ## Requirements
+
+    REQ-001, REQ-002, REQ-011, REQ-012, REQ-013
+
+    '
+  labels:
+  - mandatory
+  - provider
+- id: DB-001
+  bundle: W7
+  order: 1
+  title: Implement the Room conversation persistence stack
+  scope: Mandatory
+  priority: P0
+  difficulty: 5
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - ARCH-001
+  - FLOW-001
+  area: Persistence & Offline
+  milestone: mentor_3
+  requirements: REQ-005
+  status: Backlog
+  body: '## Outcome
+
+    Implement Room as one complete persistence result rather than separate schema/DAO/repository tasks. Define ConversationEntity
+    and MessageEntity with stable IDs, timestamps/order, role/content and the minimal metadata needed for active conversation/rewrite;
+    create DAOs, relations/indices, DroidMentorDatabase, Room-backed ConversationRepository and a migration-test baseline.
+    Keep provider DTOs and attachment bytes out of these tables.
+
+
+    ## Planning
+
+    - **Bundle:** `W7`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `ARCH-001`
+
+    - `FLOW-001`
+
+
+    ## Likely package / path
+
+    data/local/room/; data/repository/
+
+
+    ## Components / interfaces
+
+    ConversationEntity, MessageEntity, DAOs, Room database, mappers, RoomConversationRepository, migration test harness
+
+
+    ## Inputs → outputs
+
+    Inputs: domain conversation/message operations. Outputs: transactional persisted domain state in deterministic order.
+
+
+    ## Tests / verification
+
+    Room/repository tests cover create/update/read multiple conversations, deterministic message order, atomic writes and
+    reopen after database recreation. Schema inspection proves provider DTOs/raw file bytes are absent.
+
+
+    ## Done when
+
+    The existing ConversationRepository contract is backed by Room and can persist/reconstruct the same domain objects used
+    by UI/Gemini.
+
+
+    ## Requirements
+
+    REQ-005
+
+    '
+  labels:
+  - mandatory
+  - persistence
+- id: DB-002
+  bundle: W7
+  order: 2
+  title: Integrate persisted History, offline read, resume and deletion
+  scope: Mandatory
+  priority: P0
+  difficulty: 4
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - DB-001
+  - FLOW-003
+  - ARCH-002
+  area: Persistence & Offline
+  milestone: mentor_3
+  requirements: REQ-010, REQ-014, REQ-015
+  status: Backlog
+  body: '## Outcome
+
+    Replace the in-memory lifecycle repository with Room and connect History/startup behavior as one user-facing persistence
+    result. Stored conversations must populate History and Active Chat without network access; startup should resolve the
+    last valid active conversation or fall back safely; delete must remove only the target conversation/messages and clear
+    active selection if necessary.
+
+
+    ## Planning
+
+    - **Bundle:** `W7`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `4/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `DB-001`
+
+    - `FLOW-003`
+
+    - `ARCH-002`
+
+
+    ## Likely package / path
+
+    ui/history/; navigation/startup; data/local/room/
+
+
+    ## Components / interfaces
+
+    Room-backed history stream, active conversation metadata/resolver, delete transaction
+
+
+    ## Inputs → outputs
+
+    Inputs: app restart/new/open/delete actions. Outputs: durable history/active selection and offline-readable conversation
+    state.
+
+
+    ## Tests / verification
+
+    Integration tests cover create -> kill/restart -> reopen, offline history/messages, multiple chats, delete inactive/active
+    chat, missing active ID and no-network startup.
+
+
+    ## Done when
+
+    The mandatory history/resume/delete flows behave the same after restart and remain usable offline.
+
+
+    ## Requirements
+
+    REQ-010, REQ-014, REQ-015
+
+    '
+  labels:
+  - mandatory
+  - persistence
+- id: DB-003
+  bundle: W7
+  order: 3
+  title: Persist edit/rewrite semantics and rebuild provider context
+  scope: Mandatory
+  priority: P0
+  difficulty: 5
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - DB-001
+  - FLOW-002
+  - GEM-001
+  area: Persistence & Offline
+  milestone: mentor_3
+  requirements: REQ-016
+  status: Backlog
+  body: '## Outcome
+
+    Move the mandatory edit/suffix-replacement operation onto persisted data in a Room transaction. Editing a user message
+    must preserve the valid prefix, remove/replace the invalid suffix atomically, reload the resulting conversation and ensure
+    the next Gemini request is rebuilt from that persisted local history. Keep optional non-destructive branching out of this
+    task.
+
+
+    ## Planning
+
+    - **Bundle:** `W7`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `DB-001`
+
+    - `FLOW-002`
+
+    - `GEM-001`
+
+
+    ## Likely package / path
+
+    domain/chat/; data/local/room/; ui/chat/
+
+
+    ## Components / interfaces
+
+    edit-message use case, Room transaction, repository reload, provider-context rebuild
+
+
+    ## Inputs → outputs
+
+    Inputs: target message ID + replacement content. Outputs: updated persisted conversation and new selected history for
+    subsequent provider call.
+
+
+    ## Tests / verification
+
+    Tests edit first/middle/latest eligible messages, restart after edit, verify removed suffix rows are not visible, inspect
+    the next Gemini request and prove transaction failure does not leave partial state.
+
+
+    ## Done when
+
+    Mandatory edit behavior is durable, atomic and consistent with the provider context after restart.
+
+
+    ## Requirements
+
+    REQ-016
+
+    '
+  labels:
+  - mandatory
+  - persistence
+- id: M3-001
+  bundle: W8
+  order: 1
+  title: Qualify the complete mandatory product
+  scope: Mandatory
+  priority: P0
+  difficulty: 5
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - GEM-002
+  - DB-002
+  - DB-003
+  area: Milestone Delivery
+  milestone: mentor_3
+  requirements: REQ-001→REQ-016
+  status: Backlog
+  body: '## Outcome
+
+    Run the mandatory app as a product, not as isolated task tests. Build a compact acceptance/regression matrix covering
+    clean install, configured BYOK, new/open chat, Gemini send, stored history, restart, offline read, provider failures,
+    delete and edit/rewrite. Fix release-blocking mandatory defects discovered during this pass and record any remaining lower-priority
+    issue with an owner.
+
+
+    ## Planning
+
+    - **Bundle:** `W8`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `GEM-002`
+
+    - `DB-002`
+
+    - `DB-003`
+
+
+    ## Likely package / path
+
+    test/; androidTest/; GitHub milestone issue/evidence
+
+
+    ## Components / interfaces
+
+    mandatory acceptance matrix, reproducible test data, defect list
+
+
+    ## Inputs → outputs
+
+    Inputs: integrated W4–W7 build. Outputs: evidence that REQ-001→REQ-016 work together.
+
+
+    ## Tests / verification
+
+    Run scenarios from fresh and populated state; repeat restart/offline/failure cases; ensure one failed scenario does not
+    poison the next. Both students should be able to reproduce the matrix.
+
+
+    ## Done when
+
+    Mandatory baseline is green or every remaining defect is explicitly owned/prioritized before recording mentor_3.
+
+
+    ## Requirements
+
+    REQ-001→REQ-016
+
+    '
+  labels:
+  - mandatory
+  - verification
+- id: M3-002
+  bundle: W8
+  order: 2
+  title: Publish mentor_3 evidence and tag
+  scope: Mandatory
+  priority: P0
+  difficulty: 2
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - M3-001
+  - SETUP-001
+  area: Milestone Delivery
+  milestone: mentor_3
+  requirements: REQ-019, REQ-024
+  status: Backlog
+  body: '## Outcome
+
+    Package the mentor_3 milestone in one task: record the required 5–7 minute demonstration of the integrated mandatory baseline,
+    update the durable README evidence area, confirm the tagged commit matches what is shown and create mentor_3. The video
+    should demonstrate real Room/Gemini/offline/failure behavior, not staged placeholders.
+
+
+    ## Planning
+
+    - **Bundle:** `W8`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `2/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `M3-001`
+
+    - `SETUP-001`
+
+
+    ## Likely package / path
+
+    README.md; repository tag; video hosting
+
+
+    ## Components / interfaces
+
+    mentor_3 video, README link, mentor_3 tag
+
+
+    ## Inputs → outputs
+
+    Inputs: qualified mandatory build. Outputs: reviewable mentor_3 milestone package.
+
+
+    ## Tests / verification
+
+    Check video duration/audio, README link, tagged commit and reproducibility of the shown scenarios.
+
+
+    ## Done when
+
+    A reviewer can understand and verify the complete mandatory product from the tagged repository and video.
+
+
+    ## Requirements
+
+    REQ-019, REQ-024
+
+    '
+  labels:
+  - mandatory
+  - verification
+- id: BR-001
+  bundle: W9
+  order: 1
+  title: Implement the branching domain model and active-path rules
+  scope: Committed Optional
+  priority: P1
+  difficulty: 5
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - M3-002
+  - FLOW-001
+  area: Conversation Branching
+  milestone: mentor_f
+  requirements: null
+  status: Backlog
+  body: '## Outcome
+
+    Define the non-destructive graph model as one cohesive domain result. Add stable node/message IDs, parent relation, branch/head/active
+    selection and an active-path resolver that returns one deterministic root-to-head conversation for UI/provider use. Validate
+    graph invariants in the same task rather than creating one task per invariant: duplicate IDs, missing/cross-conversation/self
+    parents, cycles and invalid heads must be rejected.
+
+
+    ## Planning
+
+    - **Bundle:** `W9`
+
+    - **Scope:** `Committed Optional`
+
+    - **Priority:** `P1`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `M3-002`
+
+    - `FLOW-001`
+
+
+    ## Likely package / path
+
+    domain/branching/
+
+
+    ## Components / interfaces
+
+    branch graph model, validator, active-path resolver, provenance/identity rules
+
+
+    ## Inputs → outputs
+
+    Inputs: conversation graph + selected head. Outputs: validated graph and ordered active path.
+
+
+    ## Tests / verification
+
+    One domain test matrix covers all invalid-graph cases plus shared prefix, branch switch, deterministic order and preservation
+    of original nodes.
+
+
+    ## Done when
+
+    Branching semantics are fully specified/tested before persistence/UI work, with one selected path suitable for Gemini
+    request construction.
+
+    '
+  labels:
+  - optional
+  - branching
+- id: BR-002
+  bundle: W9
+  order: 2
+  title: Persist branching and implement edit/regenerate alternatives
+  scope: Committed Optional
+  priority: P1
+  difficulty: 5
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - BR-001
+  - DB-001
+  - DB-003
+  area: Conversation Branching
+  milestone: mentor_f
+  requirements: null
+  status: Backlog
+  body: '## Outcome
+
+    Extend Room with a migration that can represent branch parent/head/active metadata while preserving existing linear conversations
+    as valid single-path graphs. Implement non-destructive edit-as-alternative and regenerate-model flows behind use cases/repository
+    transactions; original nodes remain available and the provider receives only the selected active path. Publication/selection
+    updates should be transactional and failure-safe.
+
+
+    ## Planning
+
+    - **Bundle:** `W9`
+
+    - **Scope:** `Committed Optional`
+
+    - **Priority:** `P1`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `BR-001`
+
+    - `DB-001`
+
+    - `DB-003`
+
+
+    ## Likely package / path
+
+    data/local/room/; domain/branching/; domain/usecase/
+
+
+    ## Components / interfaces
+
+    Room migration, branch persistence, edit-as-branch, regenerate use cases, active-head persistence
+
+
+    ## Inputs → outputs
+
+    Inputs: selected message/head + alternative content/regenerate action. Outputs: new branch nodes and updated active selection
+    without deleting original history.
+
+
+    ## Tests / verification
+
+    Migration tests open old linear data and resolve the same conversation; use-case tests cover edit/regenerate success/failure,
+    original preservation and provider request inspection for selected path.
+
+
+    ## Done when
+
+    Existing users migrate safely and branching alternatives persist/reopen without corrupting mandatory conversation data.
+
+    '
+  labels:
+  - optional
+  - branching
+- id: BR-003
+  bundle: W9
+  order: 3
+  title: Add branch controls to Active Chat and qualify branching
+  scope: Committed Optional
+  priority: P1
+  difficulty: 4
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - BR-002
+  - UI-002
+  - GEM-001
+  area: Conversation Branching
+  milestone: mentor_f
+  requirements: null
+  status: Backlog
+  body: '## Outcome
+
+    Integrate branching into the existing Active Chat UI without exposing graph internals. Reuse the edit entry point and
+    add a compact alternative indicator/previous-next selector (or equivalent) only where alternatives exist. Switching changes
+    the selected visible path; it must not mutate graph history. Complete the feature with an end-to-end scenario covering
+    edit/regenerate, switch, restart and the exact history sent to Gemini.
+
+
+    ## Planning
+
+    - **Bundle:** `W9`
+
+    - **Scope:** `Committed Optional`
+
+    - **Priority:** `P1`
+
+    - **Difficulty:** `4/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `BR-002`
+
+    - `UI-002`
+
+    - `GEM-001`
+
+
+    ## Likely package / path
+
+    ui/chat/; domain/branching/; data/local/room/
+
+
+    ## Components / interfaces
+
+    branch indicator/controls, ActiveChat state integration, branching E2E scenario
+
+
+    ## Inputs → outputs
+
+    Inputs: branch availability + switch/edit/regenerate actions. Outputs: selected active path shown in UI and used for provider
+    context.
+
+
+    ## Tests / verification
+
+    Compose tests cover control visibility/switch actions; E2E test covers alternative creation, branch switching, restart,
+    original preservation and outbound Gemini history.
+
+
+    ## Done when
+
+    A user can create and navigate alternatives naturally while the selected path remains the single source for display and
+    provider context.
+
+    '
+  labels:
+  - optional
+  - branching
+- id: ORG-001
+  bundle: W10
+  order: 1
+  title: Implement conversation search and organization
+  scope: Target Optional
+  priority: P1
+  difficulty: 4
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - DB-001
+  - DB-002
+  - UI-003
+  - BR-003
+  area: Search & Organization
+  milestone: mentor_f
+  requirements: null
+  status: Backlog
+  body: '## Outcome
+
+    Treat search, rename and pin as one History organization feature. Extend persisted conversation metadata for rename/pin,
+    define search semantics as title OR message text from the selected active path, deduplicate by conversation and sort pinned
+    first then lastActivityAt descending with stable tie-break. Add the query field, clear/no-results states, pinned marker
+    and result opening to the existing History screen; only add debounce if observed UI behavior needs it.
+
+
+    ## Planning
+
+    - **Bundle:** `W10`
+
+    - **Scope:** `Target Optional`
+
+    - **Priority:** `P1`
+
+    - **Difficulty:** `4/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `DB-001`
+
+    - `DB-002`
+
+    - `UI-003`
+
+    - `BR-003`
+
+
+    ## Likely package / path
+
+    domain/search/; data/local/room/; ui/history/
+
+
+    ## Components / interfaces
+
+    search/query repository operation, rename/pin use cases, History search state/UI
+
+
+    ## Inputs → outputs
+
+    Inputs: query + persisted conversations/active paths. Outputs: ordered conversation results and durable rename/pin metadata.
+
+
+    ## Tests / verification
+
+    Repository/UI tests cover title/message matches, inactive-branch exclusion, dedupe, pinned/recent ordering, rename, pin/unpin,
+    clear/no-results and opening the intended conversation after restart.
+
+
+    ## Done when
+
+    History provides useful organization as one coherent feature without separate microtasks for each control or state.
+
+    '
+  labels:
+  - optional
+  - search
+- id: RSN-001
+  bundle: W10
+  order: 2
+  title: Implement provider-gated reasoning end to end
+  scope: Target Optional
+  priority: P1
+  difficulty: 4
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - NET-002
+  - GEM-001
+  - UI-004
+  area: Selectable Reasoning
+  milestone: mentor_f
+  requirements: null
+  status: Backlog
+  body: '## Outcome
+
+    Represent reasoning as a real provider capability rather than UI decoration. Discover/model supported options (Auto/Low/Medium/High
+    only where the selected Gemini model/API genuinely supports them), persist the user''s preference, expose the selector
+    in Settings only when available and map the selected value into the provider request. Unsupported capability must hide/fall
+    back safely; never simulate reasoning with prompt text or claim hidden chain-of-thought.
+
+
+    ## Planning
+
+    - **Bundle:** `W10`
+
+    - **Scope:** `Target Optional`
+
+    - **Priority:** `P1`
+
+    - **Difficulty:** `4/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `NET-002`
+
+    - `GEM-001`
+
+    - `UI-004`
+
+
+    ## Likely package / path
+
+    domain/provider/; data/settings/; data/remote/gemini/; ui/settings/
+
+
+    ## Components / interfaces
+
+    provider capability model, reasoning preference, Settings selector, request mapping
+
+
+    ## Inputs → outputs
+
+    Inputs: provider/model capabilities + saved preference. Outputs: gated Settings state and supported request parameter.
+
+
+    ## Tests / verification
+
+    Tests cover supported/unsupported capability, persistence/restart, option filtering, fallback to Auto/hidden selector
+    and outbound request payloads for supported choices.
+
+
+    ## Done when
+
+    Reasoning controls are truthful, persistent and provider-backed without changing conversation semantics.
+
+    '
+  labels:
+  - optional
+  - reasoning
+- id: FILE-001
+  bundle: W11
+  order: 1
+  title: Implement the local image attachment pipeline
+  scope: Target Optional
+  priority: P1
+  difficulty: 5
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - DB-001
+  - M3-002
+  area: Images & Files
+  milestone: mentor_f
+  requirements: REQ-017, REQ-018
+  status: Backlog
+  body: '## Outcome
+
+    Build the image-first attachment foundation as one pipeline: define attachment metadata/ownership, support gallery/picker
+    and camera intake, validate input, copy accepted bytes into app-private storage and persist only metadata/path/URI in
+    Room. Include lifecycle/ownership rules now so later cleanup is safe. Raw Base64/blob data must never be stored in Room.
+
+
+    ## Planning
+
+    - **Bundle:** `W11`
+
+    - **Scope:** `Target Optional`
+
+    - **Priority:** `P1`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `DB-001`
+
+    - `M3-002`
+
+
+    ## Likely package / path
+
+    platform/files/; data/local/room/; domain/attachment/
+
+
+    ## Components / interfaces
+
+    Attachment model/entity/DAO, local file store, picker/camera intake, validation/lifecycle rules
+
+
+    ## Inputs → outputs
+
+    Inputs: selected/captured image URI/result. Outputs: app-owned file + persisted attachment metadata linked to a conversation/message
+    draft.
+
+
+    ## Tests / verification
+
+    Tests/manual harness cover picker/camera cancel, invalid type/size, successful copy, missing local file, restart resolution
+    and database inspection proving metadata-only storage.
+
+
+    ## Done when
+
+    The app owns valid image bytes locally and can reconstruct attachment metadata after restart without provider encoding
+    stored in the database.
+
+
+    ## Requirements
+
+    REQ-017, REQ-018
+
+    '
+  labels:
+  - optional
+  - files-images
+- id: FILE-002
+  bundle: W11
+  order: 2
+  title: Integrate image attachments with Active Chat and Gemini
+  scope: Target Optional
+  priority: P1
+  difficulty: 5
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - FILE-001
+  - UI-002
+  - GEM-001
+  area: Images & Files
+  milestone: mentor_f
+  requirements: REQ-017, REQ-018
+  status: Backlog
+  body: '## Outcome
+
+    Wire the existing Add entry point to the attachment pipeline, show selected previews/remove-before-send state, render
+    sent image attachments with messages and convert app-owned files into the Gemini request representation only at request
+    time. Add safe cleanup for true orphan files while protecting referenced attachments. Qualify the complete gallery/camera
+    -> local storage -> Room metadata -> reopen -> Gemini request flow in the same task.
+
+
+    ## Planning
+
+    - **Bundle:** `W11`
+
+    - **Scope:** `Target Optional`
+
+    - **Priority:** `P1`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `FILE-001`
+
+    - `UI-002`
+
+    - `GEM-001`
+
+
+    ## Likely package / path
+
+    ui/chat/; data/remote/gemini/; platform/files/
+
+
+    ## Components / interfaces
+
+    attachment draft UI, message preview, Gemini image-part mapper, orphan cleanup, attachment E2E tests
+
+
+    ## Inputs → outputs
+
+    Inputs: AddAttachment action + stored attachment refs. Outputs: chat preview/message attachment and transient provider
+    image part.
+
+
+    ## Tests / verification
+
+    Compose tests cover add/remove/preview; request tests inspect image parts; cleanup tests protect referenced files; E2E
+    covers gallery/camera success, reopen and failure/cancel paths.
+
+
+    ## Done when
+
+    Image attachments work end to end without leaking provider encoding into persistence, and generic files remain out unless
+    separately promoted.
+
+
+    ## Requirements
+
+    REQ-017, REQ-018
+
+    '
+  labels:
+  - optional
+  - files-images
+- id: REL-001
+  bundle: W12
+  order: 1
+  title: Qualify and harden the final release
+  scope: Mandatory
+  priority: P0
+  difficulty: 5
+  owner: Martim Gomes
+  reviewer: Miguel Alves
+  dependencies:
+  - M3-002
+  - BR-003
+  - ORG-001
+  - RSN-001
+  - FILE-002
+  area: Release
+  milestone: mentor_f
+  requirements: REQ-001→REQ-016, REQ-025
+  status: Backlog
+  body: '## Outcome
+
+    Freeze feature scope and run the release as one acceptance/hardening task. Execute mandatory scenarios first, then only
+    optional features retained in the release; triage every failure, fix release-blocking defects and polish loading/empty/error/disabled
+    states without changing stable semantics unnecessarily. Track remaining P1/P2 issues explicitly instead of creating a
+    large late microtask list.
+
+
+    ## Planning
+
+    - **Bundle:** `W12`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `5/5`
+
+    - **Owner:** `Martim Gomes`
+
+    - **Reviewer:** `Miguel Alves`
+
+
+    ## Dependencies
+
+    - `M3-002`
+
+    - `BR-003`
+
+    - `ORG-001`
+
+    - `RSN-001`
+
+    - `FILE-002`
+
+
+    ## Likely package / path
+
+    test/; androidTest/; all enabled UI/data/provider packages
+
+
+    ## Components / interfaces
+
+    final regression matrix, defect triage, targeted fixes, UI state polish
+
+
+    ## Inputs → outputs
+
+    Inputs: release candidate. Outputs: qualified stable build and owned residual issues.
+
+
+    ## Tests / verification
+
+    Fresh install, restart, offline, provider failure, edit/delete/resume and every retained optional feature pass. No P0
+    defects remain; accepted P1/P2 issues have owner/release decision.
+
+
+    ## Done when
+
+    The release candidate is stable enough to tag and demonstrate, with mandatory acceptance independent from optional features.
+
+
+    ## Requirements
+
+    REQ-001→REQ-016, REQ-025
+
+    '
+  labels:
+  - mandatory
+  - release
+- id: REL-002
+  bundle: W12
+  order: 2
+  title: Publish final documentation, video and mentor_f release
+  scope: Mandatory
+  priority: P0
+  difficulty: 3
+  owner: Miguel Alves
+  reviewer: Martim Gomes
+  dependencies:
+  - REL-001
+  - SETUP-001
+  area: Release
+  milestone: mentor_f
+  requirements: REQ-019, REQ-021, REQ-025
+  status: Backlog
+  body: '## Outcome
+
+    Complete the final delivery as one coherent publication task. Make README.md a durable project entry point (purpose, full
+    team identification, stack, architecture overview, build/run, project management and milestone video links), remove intermediate
+    external-document references and temporary planning labels, record the required 5–7 minute final demo of the qualified
+    build and create mentor_f on the exact demonstrated commit.
+
+
+    ## Planning
+
+    - **Bundle:** `W12`
+
+    - **Scope:** `Mandatory`
+
+    - **Priority:** `P0`
+
+    - **Difficulty:** `3/5`
+
+    - **Owner:** `Miguel Alves`
+
+    - **Reviewer:** `Martim Gomes`
+
+
+    ## Dependencies
+
+    - `REL-001`
+
+    - `SETUP-001`
+
+
+    ## Likely package / path
+
+    README.md; concise docs/architecture if retained; repository tag; video hosting
+
+
+    ## Components / interfaces
+
+    atemporal README, final video, mentor_f tag, final evidence links
+
+
+    ## Inputs → outputs
+
+    Inputs: qualified release candidate + team identifiers. Outputs: durable documentation and formal final milestone.
+
+
+    ## Tests / verification
+
+    A new reader can understand/build the app without handovers; team section uses Miguel Alves (MAlves4018) and Martim Gomes
+    (MarsGomes) with student numbers/emails filled; video is 5–7 minutes and matches tagged build; all links work.
+
+
+    ## Done when
+
+    Final integrated app, documentation, video and mentor_f evidence are complete and mutually consistent.
+
+
+    ## Requirements
+
+    REQ-019, REQ-021, REQ-025
+
+    '
+  labels:
+  - mandatory
+  - release
