@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,20 +19,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ui.common.DroidMentorLogo
-import ui.common.MentorScaffold
+import ui.common.DroidMentorTopBar
 import ui.common.MessageInputBar
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.TextButton
 
 @Composable
 fun TitleScreen(
+    onNewChat: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenAbout: () -> Unit,
 ) {
     var message by remember {
         mutableStateOf("")
     }
 
-    MentorScaffold(
-        title = "DroidMentor",
-        onMenu = onOpenHistory,
+    Scaffold(
+        topBar = {
+            DroidMentorTopBar(
+                title = "DroidMentor",
+                onMenu = onOpenHistory,
+                onNewChat = onNewChat,
+            )
+        },
+
         bottomBar = {
             MessageInputBar(
                 value = message,
@@ -46,7 +59,9 @@ fun TitleScreen(
                     vertical = 10.dp,
                 ),
             )
-        }
+        },
+
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
 
         Box(
@@ -56,9 +71,11 @@ fun TitleScreen(
                 .padding(bottom = 36.dp),
             contentAlignment = Alignment.Center,
         ) {
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+
                 DroidMentorLogo()
 
                 Spacer(
@@ -78,6 +95,18 @@ fun TitleScreen(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Row(
+                    modifier = Modifier.padding(top = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    TextButton(onClick = onOpenSettings) {
+                        Text("Settings")
+                    }
+
+                    TextButton(onClick = onOpenAbout) {
+                        Text("About")
+                    }
+                }
             }
         }
     }
