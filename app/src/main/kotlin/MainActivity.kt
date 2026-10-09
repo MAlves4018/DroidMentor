@@ -16,9 +16,10 @@ class MainActivity : ComponentActivity() {
                 darkTheme = false
             ) {
                 TitleScreen(
-                    onOpenHistory = {
-                        // Navigation will be implemented later
-                    }
+                    onNewChat = {},
+                    onOpenHistory = {},
+                    onOpenSettings = {},
+                    onOpenAbout = {},
                 )
             }
         }
