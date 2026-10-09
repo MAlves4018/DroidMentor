@@ -24,6 +24,7 @@ import ui.common.MessageInputBar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.testTag
 
 @Composable
 fun TitleScreen(
@@ -99,11 +100,17 @@ fun TitleScreen(
                     modifier = Modifier.padding(top = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    TextButton(onClick = onOpenSettings) {
+                    TextButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.testTag(TitleTestTags.SETTINGS_BUTTON)
+                    ) {
                         Text("Settings")
                     }
 
-                    TextButton(onClick = onOpenAbout) {
+                    TextButton(
+                        onClick = onOpenAbout,
+                        modifier = Modifier.testTag(TitleTestTags.ABOUT_BUTTON)
+                    ) {
                         Text("About")
                     }
                 }

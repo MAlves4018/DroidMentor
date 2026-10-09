@@ -9,6 +9,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.testTag
+import ui.historyChat.HistoryTestTags
 
 /**
  * Footer displayed at the bottom of the Chat History drawer.
@@ -28,7 +30,9 @@ fun HistoryDrawerFooter(
 
         TextButton(
             onClick = onSettings,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(HistoryTestTags.SETTINGS_BUTTON)
         ) {
             Text(
                 text = "Settings",
@@ -40,7 +44,9 @@ fun HistoryDrawerFooter(
 
         TextButton(
             onClick = onAbout,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(HistoryTestTags.ABOUT_BUTTON)
         ) {
             Text(
                 text = "About",
