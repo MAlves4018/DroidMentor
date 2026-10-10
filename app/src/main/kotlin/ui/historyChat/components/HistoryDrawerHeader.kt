@@ -1,25 +1,20 @@
 package ui.historyChat.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.testTag
+import ui.historyChat.HistoryTestTags
 
-/**
- * Drawer branding and the new conversation action.
- */
 @Composable
 fun HistoryDrawerHeader(
     onNewChat: () -> Unit,
+    onTitleClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -30,13 +25,18 @@ fun HistoryDrawerHeader(
     ) {
         Text(
             text = "DroidMentor",
+            modifier = Modifier
+                .testTag(HistoryTestTags.TITLE_BUTTON)
+                .clickable(onClick = onTitleClick),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
 
         TextButton(
             onClick = onNewChat,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(HistoryTestTags.NEW_CHAT_BUTTON)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
