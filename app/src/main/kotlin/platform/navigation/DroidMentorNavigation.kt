@@ -3,6 +3,8 @@ package platform.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import isel.dei.pdm.droidmentor.DroidMentorApplication
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 
@@ -14,14 +16,15 @@ import ui.about.AboutNavigation
 @Composable
 fun DroidMentorNavigation() {
 
-    val navigator = rememberDroidMentorNavigator()
+    val repository = (LocalContext.current.applicationContext as DroidMentorApplication).conversations
+    val navigator = rememberDroidMentorNavigator(repository)
     val clipboardManager = LocalClipboardManager.current
 
     BackHandler(enabled = navigator.canGoBack) {
         navigator.back()
     }
 
-    DroidMentorDrawer(navigator = navigator) {
+    DroidMentorDrawer(navigator = navigator, repository = repository) {
 
         when (val destination = navigator.currentDestination) {
 
@@ -34,6 +37,7 @@ fun DroidMentorNavigation() {
             is DroidMentorDestination.ActiveChat -> {
                 ActiveChatNavigation(
                     conversationId = destination.conversationId,
+                    repository = repository,
                     onNavigate = navigator::handle,
                     onCopyText = { text ->
                         clipboardManager.setText(

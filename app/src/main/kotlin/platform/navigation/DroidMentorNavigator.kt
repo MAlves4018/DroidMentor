@@ -1,17 +1,17 @@
-
 package platform.navigation
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.rememberSaveable
 import domain.model.identity.ConversationId
 import ui.navigation.NavigationAction
-import java.util.UUID
+import domain.repository.ConversationRepository
+import domain.repository.InMemoryConversationRepository
 
 @Stable
 class DroidMentorNavigator(
     initialBackStack: List<DroidMentorDestination> =
-        listOf(DroidMentorDestination.Title)
+        listOf(DroidMentorDestination.Title),
+    private val repository: ConversationRepository = InMemoryConversationRepository()
 ) {
     private val backStack =
         mutableStateListOf<DroidMentorDestination>().apply {
@@ -45,10 +45,16 @@ class DroidMentorNavigator(
         isHistoryOpen = false
     }
 
+    fun removeConversation(id: ConversationId) {
+        backStack.removeAll { it is DroidMentorDestination.ActiveChat && it.conversationId == id }
+        if (backStack.isEmpty()) backStack.add(DroidMentorDestination.Title)
+    }
+
     fun back() {
         if (isHistoryOpen) {
             closeHistory()
         } else if (backStack.size > 1) {
+            if (currentDestination is DroidMentorDestination.ActiveChat) repository.leaveActive()
             backStack.removeAt(backStack.lastIndex)
         }
     }
@@ -57,15 +63,13 @@ class DroidMentorNavigator(
         when (action) {
             NavigationAction.NewChat -> {
                 closeHistory()
-                navigate(
-                    DroidMentorDestination.ActiveChat(
-                        ConversationId(UUID.randomUUID().toString())
-                    )
-                )
+                val conversation = repository.create()
+                navigate(DroidMentorDestination.ActiveChat(conversation.id))
             }
 
             NavigationAction.OpenTitle -> {
                 closeHistory()
+                repository.leaveActive()
                 backStack.clear()
                 backStack.add(DroidMentorDestination.Title)
             }
@@ -74,6 +78,7 @@ class DroidMentorNavigator(
 
             is NavigationAction.OpenConversation -> {
                 closeHistory()
+                if (!repository.activate(action.conversationId)) return
 
                 val destination =
                     DroidMentorDestination.ActiveChat(
@@ -154,10 +159,13 @@ class DroidMentorNavigator(
 }
 
 @Composable
-fun rememberDroidMentorNavigator(): DroidMentorNavigator {
-    return rememberSaveable(
-        saver = DroidMentorNavigator.Saver
-    ) {
-        DroidMentorNavigator()
+fun rememberDroidMentorNavigator(repository: ConversationRepository): DroidMentorNavigator {
+    return remember(repository) {
+        val resume = repository.resumableId()
+        DroidMentorNavigator(
+            initialBackStack = listOf(DroidMentorDestination.Title) +
+                    listOfNotNull(resume?.let { DroidMentorDestination.ActiveChat(it) }),
+            repository = repository,
+        )
     }
 }

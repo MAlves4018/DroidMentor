@@ -20,6 +20,7 @@ class ActiveChatStateHolder(
     val conversationId: ConversationId,
     initialConversation: Conversation = Conversation(conversationId),
     initialUiState: ActiveChatUiState = ActiveChatUiState(),
+    private val onConversationChanged: (Conversation) -> Unit = {},
     private val newMessageId: () -> MessageId = {
         MessageId(UUID.randomUUID().toString())
     },
@@ -79,7 +80,7 @@ class ActiveChatStateHolder(
             ActiveChatAction.StopClicked,
             ActiveChatAction.AddAttachmentClicked,
             ActiveChatAction.RetryClicked,
-            -> Unit
+                -> Unit
         }
     }
 
@@ -100,6 +101,7 @@ class ActiveChatStateHolder(
         )
 
         conversation = conversation.append(message)
+        onConversationChanged(conversation)
 
         state = state.copy(
             messages = conversation.toChatMessagesUi(),
@@ -187,6 +189,7 @@ class ActiveChatStateHolder(
             messageId = target.id,
             replacementText = confirmation.replacementText,
         )
+        onConversationChanged(conversation)
 
         state = state.copy(
             messages = conversation.toChatMessagesUi(),
