@@ -1,19 +1,23 @@
-package ui.preview
+package ui.title
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import ui.about.AboutScreen
 import ui.theme.DroidMentorTheme
 
 @Preview(
-    name = "About",
+    name = "Title - Empty",
     widthDp = 390,
     heightDp = 844,
     showBackground = true,
 )
 @Composable
-fun AboutScreenPreview() {
+fun TitleScreenPreview() {
     DroidMentorTheme(darkTheme = false) {
-        AboutScreen(onBack = {})
+        TitleScreen(
+            onNewChat = {},
+            onOpenHistory = {},
+            onOpenSettings = {},
+            onOpenAbout = {},
+        )
     }
 }

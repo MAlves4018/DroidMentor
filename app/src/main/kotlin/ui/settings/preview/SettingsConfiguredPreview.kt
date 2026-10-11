@@ -1,9 +1,7 @@
-package ui.preview
+package ui.settings
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import ui.settings.SettingsScreen
-import ui.settings.SettingsUiState
 import ui.theme.DroidMentorTheme
 
 @Preview(

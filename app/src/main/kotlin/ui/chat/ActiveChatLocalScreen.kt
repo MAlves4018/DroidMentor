@@ -3,6 +3,7 @@ package ui.chat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import domain.model.Conversation
+import domain.repository.ConversationRepository
 import domain.model.identity.ConversationId
 
 /**
@@ -12,18 +13,19 @@ import domain.model.identity.ConversationId
 @Composable
 fun ActiveChatLocalScreen(
     conversationId: ConversationId,
+    repository: ConversationRepository,
     onOpenHistory: () -> Unit,
     onOpenSettings: () -> Unit,
     onCopyText: (String) -> Unit,
-    initialConversation: Conversation = Conversation(conversationId),
+    initialConversation: Conversation = repository.find(conversationId) ?: Conversation(conversationId),
 ) {
     val stateHolder = remember(
         conversationId,
-        initialConversation,
     ) {
         ActiveChatStateHolder(
             conversationId = conversationId,
             initialConversation = initialConversation,
+            onConversationChanged = repository::save,
         )
     }
 

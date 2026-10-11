@@ -3,29 +3,29 @@ package ui.historyChat
 
 import androidx.compose.runtime.Composable
 import domain.model.identity.ConversationId
+import domain.repository.ConversationRepository
 import ui.historyChat.components.ConversationGroup
 import ui.navigation.NavigationAction
 
 @Composable
 fun HistoryNavigation(
     onNavigate: (NavigationAction) -> Unit,
+    repository: ConversationRepository,
     currentConversationId: ConversationId? = null,
     onDeleteConversation: (ConversationId) -> Unit = {}
 ) {
-    val groups = currentConversationId?.let { id ->
-        listOf(
-            ConversationGroup(
-                title = "Current",
-                conversations = listOf(
-                    ConversationSummary(
-                        id = id.value,
-                        title = "Current conversation",
-                        lastActivity = "Active"
-                    )
+    val groups = listOf(
+        ConversationGroup(
+            title = "Conversations",
+            conversations = repository.conversations.map { conversation ->
+                ConversationSummary(
+                    id = conversation.id.value,
+                    title = conversation.messages.firstOrNull()?.content?.take(40) ?: "New conversation",
+                    lastActivity = if (repository.activeId == conversation.id) "Active" else "Saved"
                 )
-            )
+            }
         )
-    } ?: emptyList()
+    )
 
     ChatHistoryScreen(
         groups = groups,

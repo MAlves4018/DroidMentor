@@ -7,10 +7,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import ui.historyChat.HistoryNavigation
+import domain.repository.ConversationRepository
 
 @Composable
 fun DroidMentorDrawer(
     navigator: DroidMentorNavigator,
+    repository: ConversationRepository,
     content: @Composable () -> Unit
 ) {
     val drawerState = rememberDrawerState(
@@ -50,6 +52,11 @@ fun DroidMentorDrawer(
             ) {
                 HistoryNavigation(
                     currentConversationId = navigator.currentConversationId,
+                    repository = repository,
+                    onDeleteConversation = { id ->
+                        repository.delete(id)
+                        navigator.removeConversation(id)
+                    },
                     onNavigate = navigator::handle
                 )
             }
