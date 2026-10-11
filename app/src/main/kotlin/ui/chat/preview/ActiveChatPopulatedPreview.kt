@@ -1,16 +1,16 @@
-package ui.preview
+package ui.chat
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import ui.chat.ActiveChatScreen
 import ui.theme.DroidMentorTheme
+import ui.preview.PreviewFixtures
 
-@Preview(name = "Active Chat - Confirm Rewrite", showBackground = true)
+@Preview(name = "Active Chat - Populated", showBackground = true)
 @Composable
-fun ActiveChatConfirmRewritePreview() {
+fun ActiveChatPopulatedPreview() {
     DroidMentorTheme(darkTheme = false) {
         ActiveChatScreen(
-            state = PreviewFixtures.confirmRewrite,
+            state = PreviewFixtures.populated,
             onAction = {},
             onOpenHistory = {},
             onOpenSettings = {},

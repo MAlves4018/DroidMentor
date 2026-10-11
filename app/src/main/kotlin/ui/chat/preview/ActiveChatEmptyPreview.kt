@@ -1,16 +1,16 @@
-package ui.preview
+package ui.chat
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import ui.chat.ActiveChatScreen
 import ui.theme.DroidMentorTheme
+import ui.preview.PreviewFixtures
 
-@Preview(name = "Active Chat - Stopped", showBackground = true)
+@Preview(name = "Active Chat - Empty", showBackground = true)
 @Composable
-fun ActiveChatStoppedPreview() {
+fun ActiveChatEmptyPreview() {
     DroidMentorTheme(darkTheme = false) {
         ActiveChatScreen(
-            state = PreviewFixtures.stopped,
+            state = PreviewFixtures.empty,
             onAction = {},
             onOpenHistory = {},
             onOpenSettings = {},
