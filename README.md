@@ -79,3 +79,8 @@ Use the included Gradle Wrapper when running Gradle from the command line.
 ## Secrets
 
 Do not commit Gemini API keys, Personal Access Tokens or other credentials. Runtime user configuration belongs in the application and local developer-only configuration belongs in ignored local files.
+
+## Deliveries
+
+Here the videos associated with the requested deliveries:
+ - Mentor_2: https://youtu.be/V9yGXt0vSC4
