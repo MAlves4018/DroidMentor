@@ -15,9 +15,8 @@ fun SettingsConfiguredPreview() {
     DroidMentorTheme(darkTheme = false) {
         SettingsScreen(
             state = SettingsUiState(
-                apiKeyDraft = "replacement-preview-key",
+                page = SettingsPage.API_KEY,
                 apiKeyConfigured = true,
-                apiKeyRevealed = true,
             ),
             onAction = {},
             onBack = {},

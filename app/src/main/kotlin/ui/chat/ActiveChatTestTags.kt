@@ -2,6 +2,7 @@ package ui.chat
 
 object ActiveChatTestTags {
     const val EMPTY_CONTENT = "active_chat_empty_content"
+    const val JUMP_LATEST = "active_chat_jump_latest"
     const val MESSAGE_LIST = "active_chat_message_list"
     const val COMPOSER_FIELD = "active_chat_composer_field"
     const val SEND_ACTION = "active_chat_send_action"

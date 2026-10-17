@@ -15,7 +15,7 @@ fun SettingsUnconfiguredPreview() {
     DroidMentorTheme(darkTheme = false) {
         SettingsScreen(
             state = SettingsUiState(
-                apiKeyDraft = "preview-key-not-real",
+                page = SettingsPage.API_KEY,
             ),
             onAction = {},
             onBack = {},

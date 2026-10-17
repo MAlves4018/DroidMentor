@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import ui.common.MentorEmpty
 import ui.common.MentorError
 import ui.common.MentorLoading
+import ui.common.MentorConfirmationDialog
 import ui.historyChat.components.*
 
 @Composable
@@ -20,6 +21,7 @@ fun ChatHistoryScreen(
     onSettings: () -> Unit,
     onAbout: () -> Unit,
     modifier: Modifier = Modifier,
+    pendingDeletion: ConversationSummary? = null,
     onTitleClick: () -> Unit = {}
 ) {
     Surface(
@@ -72,5 +74,15 @@ fun ChatHistoryScreen(
                 onAbout = onAbout
             )
         }
+    }
+    pendingDeletion?.let { pending ->
+        MentorConfirmationDialog(
+            title = "Delete conversation?",
+            message = "Are you sure you want to delete \"${pending.title}\"?",
+            confirmText = "Delete",
+            dismissText = "Cancel",
+            onConfirm = { onAction(ChatHistoryAction.ConfirmDeleteConversation) },
+            onDismiss = { onAction(ChatHistoryAction.CancelDeleteConversation) },
+        )
     }
 }

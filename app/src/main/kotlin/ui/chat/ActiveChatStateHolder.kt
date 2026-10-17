@@ -1,8 +1,8 @@
 package ui.chat
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import domain.model.Conversation
 import domain.model.Message
 import domain.model.Role
@@ -13,7 +13,7 @@ import ui.chat.model.ChatRequestState
 import ui.chat.model.MessageEditState
 
 /**
- * Local Active Chat state machine used before provider and persistence effects exist.
+ * Framework-independent Active Chat state machine used before provider effects exist.
  * It owns one immutable Conversation and projects it into the existing UI-002 boundary.
  */
 class ActiveChatStateHolder(
@@ -33,17 +33,27 @@ class ActiveChatStateHolder(
 
     private var conversation: Conversation = initialConversation
 
-    var state: ActiveChatUiState by mutableStateOf(
-        initialUiState.copy(
-            messages = initialConversation.toChatMessagesUi(),
-        )
+    // Repository saves are synchronous at this boundary. A save may notify observers
+    // immediately; never let an observer re-enter the same state machine before the
+    // conversation and draft/edit state have been published.
+    private var isPersisting = false
+
+    private val mutableUiState = MutableStateFlow(
+        initialUiState.copy(messages = initialConversation.toChatMessagesUi())
     )
-        private set
+    val uiState: StateFlow<ActiveChatUiState> = mutableUiState.asStateFlow()
+
+    /** Synchronous snapshot kept for existing reducer tests and non-Compose callers. */
+    var state: ActiveChatUiState
+        get() = mutableUiState.value
+        private set(value) { mutableUiState.value = value }
 
     val currentConversation: Conversation
         get() = conversation
 
     fun onAction(action: ActiveChatAction) {
+        if (isPersisting) return
+
         when (action) {
             is ActiveChatAction.DraftChanged -> {
                 state = state.copy(draft = action.value)
@@ -100,13 +110,20 @@ class ActiveChatStateHolder(
             sequence = conversation.nextSequence,
         )
 
-        conversation = conversation.append(message)
-        onConversationChanged(conversation)
-
-        state = state.copy(
-            messages = conversation.toChatMessagesUi(),
-            draft = "",
-        )
+        // Publish the new local snapshot only after the repository has accepted it.
+        // If persistence fails, keep the draft and the current conversation intact.
+        val updated = conversation.append(message)
+        isPersisting = true
+        try {
+            onConversationChanged(updated)
+            conversation = updated
+            state = state.copy(
+                messages = updated.toChatMessagesUi(),
+                draft = "",
+            )
+        } finally {
+            isPersisting = false
+        }
     }
 
     private fun beginEdit(messageId: String) {
@@ -179,22 +196,30 @@ class ActiveChatStateHolder(
     }
 
     private fun confirmRewrite() {
+        if (state.isGenerating) return
         val confirmation = state.editState as? MessageEditState.ConfirmRewrite ?: return
 
         val target = conversation.messages.firstOrNull {
             it.id.value == confirmation.messageId && it.role == Role.USER
         } ?: return
 
-        conversation = conversation.rewriteUserMessage(
+        // Do not drop the original response suffix until the replacement is stored.
+        // A failed write leaves the confirmation available for an explicit retry.
+        val updated = conversation.rewriteUserMessage(
             messageId = target.id,
             replacementText = confirmation.replacementText,
         )
-        onConversationChanged(conversation)
-
-        state = state.copy(
-            messages = conversation.toChatMessagesUi(),
-            editState = MessageEditState.None,
-            requestState = ChatRequestState.Idle,
-        )
+        isPersisting = true
+        try {
+            onConversationChanged(updated)
+            conversation = updated
+            state = state.copy(
+                messages = updated.toChatMessagesUi(),
+                editState = MessageEditState.None,
+                requestState = ChatRequestState.Idle,
+            )
+        } finally {
+            isPersisting = false
+        }
     }
 }

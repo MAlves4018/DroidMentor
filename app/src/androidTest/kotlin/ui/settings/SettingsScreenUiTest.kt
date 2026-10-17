@@ -12,150 +12,59 @@ import org.junit.Rule
 import org.junit.Test
 import ui.theme.DroidMentorTheme
 
+import ui.theme.DroidMentorTheme
+
 class SettingsScreenUiTest {
+    @get:Rule val composeRule = createComposeRule()
 
-    @get:Rule
-    val composeRule = createComposeRule()
-
-    @Test
-    fun unconfiguredState_isMaskedAndHasNoRemoveAction() {
-        setScreen(
-            state = SettingsUiState(
-                apiKeyDraft = "preview-key-not-real",
-            )
-        )
-
-        composeRule
-            .onNodeWithText("Gemini API key not configured")
-            .assertExists()
-
-        composeRule
-            .onNodeWithText("Show")
-            .assertExists()
-
-        composeRule
-            .onNodeWithText("Remove API key")
-            .assertDoesNotExist()
-
-        composeRule
-            .onNodeWithTag(SettingsTestTags.SAVE_KEY)
-            .assertIsEnabled()
+    @Test fun overviewMatchesMockupSectionsAndNoReasoning() {
+        setScreen(SettingsUiState(apiKeyConfigured = true))
+        composeRule.onNodeWithText("GENERAL").assertExists()
+        composeRule.onNodeWithText("Theme").assertExists()
+        composeRule.onNodeWithText("GEMINI").assertExists()
+        composeRule.onNodeWithText("API key").assertExists()
+        composeRule.onNodeWithText("ABOUT").assertExists()
+        composeRule.onNodeWithTag(SettingsTestTags.THEME_SWITCH).assertExists()
+        composeRule.onNodeWithText("Reasoning").assertDoesNotExist()
+        composeRule.onNodeWithTag(SettingsTestTags.API_KEY_FIELD).assertDoesNotExist()
     }
 
-    @Test
-    fun revealedState_exposesHideControl() {
-        setScreen(
-            state = SettingsUiState(
-                apiKeyDraft = "preview-key-not-real",
-                apiKeyRevealed = true,
-            )
-        )
-
-        composeRule
-            .onNodeWithText("Hide")
-            .assertExists()
-
-        composeRule
-            .onNodeWithText("Show")
-            .assertDoesNotExist()
-    }
-
-    @Test
-    fun fieldAndVisibility_emitActions() {
+    @Test fun themeSwitchEmitsTypedAction() {
         val actions = mutableListOf<SettingsAction>()
-
-        setScreen(
-            state = SettingsUiState(),
-            onAction = actions::add,
-        )
-
-        composeRule
-            .onNodeWithTag(SettingsTestTags.API_KEY_FIELD)
-            .performTextInput("abc")
-
-        assertEquals(
-            SettingsAction.ApiKeyChanged("abc"),
-            actions.last(),
-        )
-
-        composeRule
-            .onNodeWithText("Show")
-            .performClick()
-
-        assertEquals(
-            SettingsAction.ToggleApiKeyVisibility,
-            actions.last(),
-        )
+        setScreen(SettingsUiState(), onAction = actions::add)
+        composeRule.onNodeWithTag(SettingsTestTags.THEME_SWITCH).performClick()
+        assertEquals(SettingsAction.ToggleThemeClicked, actions.last())
     }
 
-    @Test
-    fun emptyDraft_disablesSave() {
-        setScreen(SettingsUiState())
-
-        composeRule
-            .onNodeWithTag(SettingsTestTags.SAVE_KEY)
-            .assertIsNotEnabled()
-    }
-
-    @Test
-    fun validDraft_saveEmitsAction() {
+    @Test fun apiKeyRowNavigatesToSubpage() {
         val actions = mutableListOf<SettingsAction>()
-
-        setScreen(
-            state = SettingsUiState(
-                apiKeyDraft = "abc",
-            ),
-            onAction = actions::add,
-        )
-
-        composeRule
-            .onNodeWithTag(SettingsTestTags.SAVE_KEY)
-            .assertIsEnabled()
-            .performClick()
-
-        assertEquals(
-            SettingsAction.SaveKeyClicked,
-            actions.last(),
-        )
+        setScreen(SettingsUiState(), onAction = actions::add)
+        composeRule.onNodeWithTag(SettingsTestTags.API_KEY_ROW).performClick()
+        assertEquals(SettingsAction.OpenApiKeyClicked, actions.last())
     }
 
-    @Test
-    fun configuredState_exposesRemove_andEmitsAction() {
+    @Test fun keySubpageOffersRevealAndDisabledSaveWhenEmpty() {
+        setScreen(SettingsUiState(page = SettingsPage.API_KEY))
+        composeRule.onNodeWithTag(SettingsTestTags.API_KEY_FIELD).assertExists()
+        composeRule.onNodeWithText("Show").assertExists()
+        composeRule.onNodeWithTag(SettingsTestTags.SAVE_KEY).assertIsNotEnabled()
+        composeRule.onNodeWithTag(SettingsTestTags.REMOVE_KEY).assertDoesNotExist()
+    }
+
+    @Test fun apiKeyActionsAreTyped() {
         val actions = mutableListOf<SettingsAction>()
-
-        setScreen(
-            state = SettingsUiState(
-                apiKeyConfigured = true,
-            ),
-            onAction = actions::add,
-        )
-
-        composeRule
-            .onNodeWithText("Gemini API key configured")
-            .assertExists()
-
-        composeRule
-            .onNodeWithTag(SettingsTestTags.REMOVE_KEY)
-            .assertExists()
-            .performClick()
-
-        assertEquals(
-            SettingsAction.RemoveKeyClicked,
-            actions.last(),
-        )
+        setScreen(SettingsUiState(page = SettingsPage.API_KEY), onAction = actions::add)
+        composeRule.onNodeWithTag(SettingsTestTags.API_KEY_FIELD).performTextInput("abc")
+        assertEquals(SettingsAction.ApiKeyChanged("abc"), actions.last())
+        composeRule.onNodeWithText("Show").performClick()
+        assertEquals(SettingsAction.ToggleApiKeyVisibility, actions.last())
     }
 
-    @Test
-    fun exposesReservedReasoningCapabilityArea() {
-        setScreen(SettingsUiState())
-
-        composeRule
-            .onNodeWithTag(SettingsTestTags.PROVIDER_CAPABILITIES)
-            .assertExists()
-
-        composeRule
-            .onNodeWithText("Reasoning")
-            .assertExists()
+    @Test fun configuredRemoveRequestsConfirmationRatherThanImmediateDelete() {
+        val actions = mutableListOf<SettingsAction>()
+        setScreen(SettingsUiState(page = SettingsPage.API_KEY, apiKeyConfigured = true), onAction = actions::add)
+        composeRule.onNodeWithTag(SettingsTestTags.REMOVE_KEY).performClick()
+        assertEquals(SettingsAction.RequestRemoveKeyClicked, actions.last())
     }
 
     private fun setScreen(

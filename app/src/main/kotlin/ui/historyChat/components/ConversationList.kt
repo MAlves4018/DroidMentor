@@ -61,7 +61,7 @@ fun ConversationList(
                     },
                     onDelete = {
                         onAction(
-                            ChatHistoryAction.DeleteConversation(conversation.id)
+                            ChatHistoryAction.RequestDeleteConversation(conversation.id)
                         )
                     }
                 )
@@ -69,8 +69,3 @@ fun ConversationList(
         }
     }
 }
-
-data class ConversationGroup(
-    val title: String,
-    val conversations: List<ConversationSummary>
-)

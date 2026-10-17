@@ -1,71 +1,53 @@
-
 package ui.historyChat
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import domain.model.identity.ConversationId
 import domain.repository.ConversationRepository
-import ui.historyChat.components.ConversationGroup
+import kotlinx.coroutines.flow.collect
 import ui.navigation.NavigationAction
 
+/** Compose host: adapts the current snapshot-backed repository to a testable ViewModel. */
 @Composable
 fun HistoryNavigation(
     onNavigate: (NavigationAction) -> Unit,
     repository: ConversationRepository,
-    currentConversationId: ConversationId? = null,
-    onDeleteConversation: (ConversationId) -> Unit = {}
+    onConversationDeleted: (ConversationId) -> Unit = {},
 ) {
-    val groups = listOf(
-        ConversationGroup(
-            title = "Conversations",
-            conversations = repository.conversations.map { conversation ->
-                ConversationSummary(
-                    id = conversation.id.value,
-                    title = conversation.messages.firstOrNull()?.content?.take(40) ?: "New conversation",
-                    lastActivity = if (repository.activeId == conversation.id) "Active" else "Saved"
-                )
-            }
-        )
+    val model: HistoryViewModel = viewModel(
+        key = "droidmentor-history",
+        factory = HistoryViewModelFactory(repository),
     )
+    val state by model.uiState.collectAsStateWithLifecycle()
+
+    // Transitional ARCH-001 adapter: InMemoryConversationRepository uses Compose snapshots.
+    // Replace this with repository Flow collection once the shared boundary supports it.
+    LaunchedEffect(repository, model) {
+        snapshotFlow { repository.conversations.toList() to repository.activeId }
+            .collect { model.refresh() }
+    }
+
+    val dispatch: (ChatHistoryAction) -> Unit = { action ->
+        when (val effect = model.onAction(action)) {
+            is HistoryEffect.Navigate -> onNavigate(effect.action)
+            is HistoryEffect.ConversationDeleted -> onConversationDeleted(effect.id)
+            null -> Unit
+        }
+    }
 
     ChatHistoryScreen(
-        groups = groups,
-        isLoading = false,
-        errorMessage = null,
-
-        onAction = { action ->
-            when (action) {
-                is ChatHistoryAction.OpenConversation -> {
-                    onNavigate(
-                        NavigationAction.OpenConversation(
-                            ConversationId(action.conversationId)
-                        )
-                    )
-                }
-
-                ChatHistoryAction.NewConversation -> {
-                    onNavigate(NavigationAction.NewChat)
-                }
-
-                is ChatHistoryAction.DeleteConversation -> {
-                    onDeleteConversation(
-                        ConversationId(action.conversationId)
-                    )
-                }
-            }
-        },
-
-        onSearch = {},
-
-        onSettings = {
-            onNavigate(NavigationAction.OpenSettings)
-        },
-
-        onAbout = {
-            onNavigate(NavigationAction.OpenAbout)
-        },
-
-        onTitleClick = {
-            onNavigate(NavigationAction.OpenTitle)
-        }
+        groups = state.groups,
+        isLoading = state.isLoading,
+        errorMessage = state.errorMessage,
+        pendingDeletion = state.pendingDeletion,
+        onAction = dispatch,
+        onSearch = {}, // Search is not yet part of the local milestone.
+        onSettings = { dispatch(ChatHistoryAction.OpenSettings) },
+        onAbout = { dispatch(ChatHistoryAction.OpenAbout) },
+        onTitleClick = { dispatch(ChatHistoryAction.OpenTitle) },
     )
 }
