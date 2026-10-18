@@ -6,10 +6,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import ui.common.MentorConfirmationDialog
 import ui.common.MentorIconButton
 import ui.historyChat.ConversationSummary
 
@@ -36,10 +39,6 @@ fun ConversationItem(
     modifier: Modifier = Modifier
 ) {
     var menuExpanded by remember {
-        mutableStateOf(false)
-    }
-
-    var showDeleteConfirmation by remember {
         mutableStateOf(false)
     }
 
@@ -65,9 +64,11 @@ fun ConversationItem(
                     menuExpanded = true
                 }
             ) {
-                Text(
-                    text = "⋮",
-                    style = MaterialTheme.typography.titleLarge
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = "Conversation options",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
                 )
             }
 
@@ -83,26 +84,10 @@ fun ConversationItem(
                     },
                     onClick = {
                         menuExpanded = false
-                        showDeleteConfirmation = true
+                        onDelete()
                     }
                 )
             }
         }
-    }
-
-    if (showDeleteConfirmation) {
-        MentorConfirmationDialog(
-            title = "Delete conversation?",
-            message = "Are you sure you want to delete \"${conversation.title}\"?",
-            confirmText = "Delete",
-            dismissText = "Cancel",
-            onConfirm = {
-                showDeleteConfirmation = false
-                onDelete()
-            },
-            onDismiss = {
-                showDeleteConfirmation = false
-            }
-        )
     }
 }

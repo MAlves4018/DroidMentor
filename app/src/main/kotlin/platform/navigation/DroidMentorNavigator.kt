@@ -2,6 +2,7 @@ package platform.navigation
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import domain.model.identity.ConversationId
 import ui.navigation.NavigationAction
 import domain.repository.ConversationRepository
@@ -48,14 +49,27 @@ class DroidMentorNavigator(
     fun removeConversation(id: ConversationId) {
         backStack.removeAll { it is DroidMentorDestination.ActiveChat && it.conversationId == id }
         if (backStack.isEmpty()) backStack.add(DroidMentorDestination.Title)
+        synchronizeActiveConversation()
+    }
+
+    /** Keep repository selection aligned with the surviving navigation stack. */
+    private fun synchronizeActiveConversation() {
+        val survivingChat = backStack.asReversed()
+            .filterIsInstance<DroidMentorDestination.ActiveChat>()
+            .firstOrNull { repository.find(it.conversationId) != null }
+        if (survivingChat != null) {
+            repository.activate(survivingChat.conversationId)
+        } else {
+            repository.leaveActive()
+        }
     }
 
     fun back() {
         if (isHistoryOpen) {
             closeHistory()
         } else if (backStack.size > 1) {
-            if (currentDestination is DroidMentorDestination.ActiveChat) repository.leaveActive()
             backStack.removeAt(backStack.lastIndex)
+            synchronizeActiveConversation()
         }
     }
 
@@ -112,10 +126,14 @@ class DroidMentorNavigator(
     }
 
     companion object {
-        val Saver = Saver<DroidMentorNavigator, ArrayList<String>>(
-            save = { navigator ->
-                ArrayList(
-                    navigator.backStack.map { destination ->
+        /**
+         * Restore routes against the existing application repository. A removed chat
+         * cannot be restored as an active destination after process recreation.
+         */
+        fun saver(repository: ConversationRepository): Saver<DroidMentorNavigator, ArrayList<String>> =
+            Saver(
+                save = { navigator ->
+                    ArrayList(navigator.backStack.map { destination ->
                         when (destination) {
                             DroidMentorDestination.Title -> "title"
                             DroidMentorDestination.Settings -> "settings"
@@ -123,44 +141,40 @@ class DroidMentorNavigator(
                             is DroidMentorDestination.ActiveChat ->
                                 "chat:${destination.conversationId.value}"
                         }
+                    })
+                },
+                restore = { routes ->
+                    val destinations = routes.mapNotNull { route ->
+                        when {
+                            route == "title" -> DroidMentorDestination.Title
+                            route == "settings" -> DroidMentorDestination.Settings
+                            route == "about" -> DroidMentorDestination.About
+                            route.startsWith("chat:") -> {
+                                val value = route.removePrefix("chat:")
+                                if (value.isBlank()) null else {
+                                    val id = ConversationId(value)
+                                    if (repository.find(id) != null) {
+                                        DroidMentorDestination.ActiveChat(id)
+                                    } else null
+                                }
+                            }
+                            else -> null
+                        }
                     }
-                )
-            },
-            restore = { saved ->
-                val destinations = saved.mapNotNull { route ->
-                    when {
-                        route == "title" ->
-                            DroidMentorDestination.Title
-
-                        route == "settings" ->
-                            DroidMentorDestination.Settings
-
-                        route == "about" ->
-                            DroidMentorDestination.About
-
-                        route.startsWith("chat:") &&
-                                route.length > 5 ->
-                            DroidMentorDestination.ActiveChat(
-                                ConversationId(route.removePrefix("chat:"))
-                            )
-
-                        else -> null
-                    }
-                }
-
-                DroidMentorNavigator(
-                    destinations.ifEmpty {
-                        listOf(DroidMentorDestination.Title)
-                    }
-                )
-            }
-        )
+                    DroidMentorNavigator(
+                        initialBackStack = destinations.ifEmpty {
+                            listOf(DroidMentorDestination.Title)
+                        },
+                        repository = repository,
+                    ).also { it.synchronizeActiveConversation() }
+                },
+            )
     }
 }
 
 @Composable
 fun rememberDroidMentorNavigator(repository: ConversationRepository): DroidMentorNavigator {
-    return remember(repository) {
+    return rememberSaveable(repository, saver = DroidMentorNavigator.saver(repository)) {
         val resume = repository.resumableId()
         DroidMentorNavigator(
             initialBackStack = listOf(DroidMentorDestination.Title) +

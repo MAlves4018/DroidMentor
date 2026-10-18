@@ -1,6 +1,5 @@
 package platform.navigation
 
-import domain.model.identity.ConversationId
 import org.junit.Assert.*
 import org.junit.Test
 import ui.navigation.NavigationAction
@@ -109,11 +108,10 @@ class DroidMentorNavigatorTest {
     @Test
     fun selectingExistingConversationPreservesId() {
         val navigator = DroidMentorNavigator()
-        val id = ConversationId("conversation-123")
-
-        navigator.handle(
-            NavigationAction.OpenConversation(id)
-        )
+        navigator.handle(NavigationAction.NewChat)
+        val id = navigator.currentConversationId!!
+        navigator.handle(NavigationAction.OpenTitle)
+        navigator.handle(NavigationAction.OpenConversation(id))
 
         assertEquals(id, navigator.currentConversationId)
 
@@ -128,19 +126,10 @@ class DroidMentorNavigatorTest {
     @Test
     fun selectingPreviousConversationReusesRoute() {
         val navigator = DroidMentorNavigator()
-
-        val firstId = ConversationId("chat-1")
-        val secondId = ConversationId("chat-2")
-
-        navigator.handle(
-            NavigationAction.OpenConversation(firstId)
-        )
-        navigator.handle(
-            NavigationAction.OpenConversation(secondId)
-        )
-        navigator.handle(
-            NavigationAction.OpenConversation(firstId)
-        )
+        navigator.handle(NavigationAction.NewChat)
+        val firstId = navigator.currentConversationId!!
+        navigator.handle(NavigationAction.NewChat)
+        navigator.handle(NavigationAction.OpenConversation(firstId))
 
         assertEquals(firstId, navigator.currentConversationId)
 

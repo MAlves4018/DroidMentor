@@ -1,37 +1,33 @@
 package ui.chat
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import domain.model.Conversation
-import domain.repository.ConversationRepository
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelStoreOwner
 import domain.model.identity.ConversationId
+import domain.repository.ConversationRepository
 
-/**
- * Local host for ActiveChatScreen. FLOW-001 can route a ConversationId here, while later tasks
- * replace local effects without changing the state/action boundary of ActiveChatScreen.
- */
+/** Host only: collects ViewModel state and forwards typed UI actions. */
 @Composable
 fun ActiveChatLocalScreen(
     conversationId: ConversationId,
     repository: ConversationRepository,
+    viewModelStoreOwner: ViewModelStoreOwner,
     onOpenHistory: () -> Unit,
     onOpenSettings: () -> Unit,
     onCopyText: (String) -> Unit,
-    initialConversation: Conversation = repository.find(conversationId) ?: Conversation(conversationId),
 ) {
-    val stateHolder = remember(
-        conversationId,
-    ) {
-        ActiveChatStateHolder(
-            conversationId = conversationId,
-            initialConversation = initialConversation,
-            onConversationChanged = repository::save,
-        )
-    }
+    // One owner per conversation. Unlike Activity-scoped keys, deleted chats can be cleared.
+    val viewModel: ActiveChatViewModel = viewModel(
+        viewModelStoreOwner = viewModelStoreOwner,
+        factory = ActiveChatViewModelFactory(conversationId, repository),
+    )
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     ActiveChatScreen(
-        state = stateHolder.state,
-        onAction = stateHolder::onAction,
+        state = state,
+        onAction = viewModel::onAction,
         onOpenHistory = onOpenHistory,
         onOpenSettings = onOpenSettings,
         onCopyText = onCopyText,

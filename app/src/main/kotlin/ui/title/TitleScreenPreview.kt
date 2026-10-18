@@ -14,10 +14,8 @@ import ui.theme.DroidMentorTheme
 fun TitleScreenPreview() {
     DroidMentorTheme(darkTheme = false) {
         TitleScreen(
-            onNewChat = {},
-            onOpenHistory = {},
-            onOpenSettings = {},
-            onOpenAbout = {},
+            state = TitleUiState(),
+            onAction = {},
         )
     }
 }

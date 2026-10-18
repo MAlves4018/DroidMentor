@@ -3,10 +3,12 @@ package platform.navigation
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import org.junit.Rule
 import org.junit.Test
@@ -79,7 +81,7 @@ class DroidMentorNavigationUiTest {
             .performClick()
 
         composeRule
-            .onNodeWithText("GEMINI API KEY")
+            .onNodeWithText("GENERAL")
             .assertIsDisplayed()
     }
 
@@ -177,7 +179,7 @@ class DroidMentorNavigationUiTest {
         composeRule.waitForIdle()
 
         composeRule
-            .onNodeWithText("GEMINI API KEY")
+            .onNodeWithText("GENERAL")
             .assertIsDisplayed()
     }
 
@@ -219,7 +221,7 @@ class DroidMentorNavigationUiTest {
         openHistory()
 
         composeRule
-            .onNodeWithText("Current conversation")
+            .onNodeWithText("New conversation")
             .assertIsDisplayed()
     }
 
@@ -229,7 +231,7 @@ class DroidMentorNavigationUiTest {
         openHistory()
 
         composeRule
-            .onNodeWithText("Current conversation")
+            .onNodeWithText("New conversation")
             .performClick()
 
         composeRule.waitForIdle()
@@ -237,6 +239,31 @@ class DroidMentorNavigationUiTest {
         composeRule
             .onNodeWithTag(ActiveChatTestTags.EMPTY_CONTENT)
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun activeChatDraftSurvivesSettingsAndBack() {
+        startNewChat()
+        composeRule.onNodeWithTag(ActiveChatTestTags.COMPOSER_FIELD)
+            .performTextInput("Draft survives navigation")
+
+        openHistory()
+        composeRule.onNodeWithTag(HistoryTestTags.SETTINGS_BUTTON).performClick()
+        composeRule.onNodeWithText("GENERAL").assertIsDisplayed()
+
+        pressBack()
+        composeRule.onNodeWithTag(ActiveChatTestTags.COMPOSER_FIELD)
+            .assertTextContains("Draft survives navigation")
+    }
+
+    @Test
+    fun historyUpdatesAfterSendingFromActiveChat() {
+        startNewChat()
+        composeRule.onNodeWithTag(ActiveChatTestTags.COMPOSER_FIELD)
+            .performTextInput("History observes live changes")
+        composeRule.onNodeWithTag(ActiveChatTestTags.SEND_ACTION).performClick()
+        openHistory()
+        composeRule.onNodeWithText("History observes live changes").assertIsDisplayed()
     }
 
     @Test

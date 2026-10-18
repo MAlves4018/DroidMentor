@@ -1,24 +1,23 @@
 package ui.title
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import ui.navigation.NavigationAction
 
+/** Host routes one-off commands. TitleScreen only renders state and emits actions. */
 @Composable
-fun TitleNavigation(
-    onNavigate: (NavigationAction) -> Unit
-) {
+fun TitleNavigation(onNavigate: (NavigationAction) -> Unit) {
+    val model: TitleViewModel = viewModel()
+    val state by model.uiState.collectAsStateWithLifecycle()
     TitleScreen(
-        onNewChat = {
-            onNavigate(NavigationAction.NewChat)
+        state = state,
+        onAction = { action ->
+            when (val effect = model.onAction(action)) {
+                is TitleEffect.Navigate -> onNavigate(effect.action)
+                null -> Unit
+            }
         },
-        onOpenHistory = {
-            onNavigate(NavigationAction.OpenHistory)
-        },
-        onOpenSettings = {
-            onNavigate(NavigationAction.OpenSettings)
-        },
-        onOpenAbout = {
-            onNavigate(NavigationAction.OpenAbout)
-        }
     )
 }

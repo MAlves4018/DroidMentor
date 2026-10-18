@@ -1,6 +1,10 @@
 package ui.historyChat
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -49,6 +53,7 @@ class ChatHistoryScreenTest {
         groups: List<ConversationGroup> = this.groups,
         isLoading: Boolean = false,
         errorMessage: String? = null,
+        pendingDeletion: () -> ConversationSummary? = { null },
         onAction: (ChatHistoryAction) -> Unit = {},
         onSearch: () -> Unit = {},
         onSettings: () -> Unit = {},
@@ -60,6 +65,7 @@ class ChatHistoryScreenTest {
                     groups = groups,
                     isLoading = isLoading,
                     errorMessage = errorMessage,
+                    pendingDeletion = pendingDeletion(),
                     onAction = onAction,
                     onSearch = onSearch,
                     onSettings = onSettings,
@@ -147,56 +153,50 @@ class ChatHistoryScreenTest {
             assertTrue(settingsClicked)
             assertTrue(aboutClicked)
         }
-    }
-
-    @Test
-    fun deleteRequiresConfirmation() {
-        var receivedAction: ChatHistoryAction? = null
-
-        setScreen(
-            groups = listOf(groups.first()),
-            onAction = { receivedAction = it }
-        )
-
-        // Only one conversation is present, so only one overflow button exists.
-        composeRule.onNodeWithText("⋮").performClick()
-        composeRule.onNodeWithText("Delete").performClick()
-
-        composeRule.onNodeWithText("Delete conversation?")
-            .assertIsDisplayed()
-
-        composeRule.runOnIdle {
-            assertEquals(null, receivedAction)
         }
 
+    @Test
+    fun deleteRequestDoesNotDeleteUntilStateDisplaysConfirmation() {
+        var pending by mutableStateOf<ConversationSummary?>(null)
+        val actions = mutableListOf<ChatHistoryAction>()
+        val summary = groups.first().conversations.first()
+        setScreen(
+            groups = listOf(groups.first()),
+            pendingDeletion = { pending },
+            onAction = { action ->
+                actions += action
+                if (action is ChatHistoryAction.RequestDeleteConversation) pending = summary
+            },
+        )
+        composeRule.onNodeWithContentDescription("Conversation options").performClick()
         composeRule.onNodeWithText("Delete").performClick()
-
+        composeRule.onNodeWithText("Delete conversation?").assertIsDisplayed()
         composeRule.runOnIdle {
-            assertEquals(
-                ChatHistoryAction.DeleteConversation("1"),
-                receivedAction
-            )
+            assertEquals(ChatHistoryAction.RequestDeleteConversation("1"), actions.first())
+            assertEquals(1, actions.size) // A request cannot delete anything by itself.
+        }
+        composeRule.onNodeWithText("Delete").performClick()
+        composeRule.runOnIdle {
+            assertEquals(ChatHistoryAction.ConfirmDeleteConversation, actions.last())
         }
     }
 
     @Test
-    fun cancelDeleteDoesNotEmitAction() {
-        var receivedAction: ChatHistoryAction? = null
-
+    fun cancelDeleteOnlyEmitsCancelIntent() {
+        val actions = mutableListOf<ChatHistoryAction>()
+        var pending by mutableStateOf<ConversationSummary?>(groups.first().conversations.first())
         setScreen(
             groups = listOf(groups.first()),
-            onAction = { receivedAction = it }
+            pendingDeletion = { pending },
+            onAction = { action ->
+                actions += action
+                if (action == ChatHistoryAction.CancelDeleteConversation) pending = null
+            },
         )
-
-        composeRule.onNodeWithText("⋮").performClick()
-        composeRule.onNodeWithText("Delete").performClick()
         composeRule.onNodeWithText("Cancel").performClick()
-
-        composeRule.onNodeWithText("Delete conversation?")
-            .assertDoesNotExist()
-
+        composeRule.onNodeWithText("Delete conversation?").assertDoesNotExist()
         composeRule.runOnIdle {
-            assertEquals(null, receivedAction)
+            assertEquals(listOf(ChatHistoryAction.CancelDeleteConversation), actions)
         }
     }
 
