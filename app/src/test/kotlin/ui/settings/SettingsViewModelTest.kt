@@ -65,4 +65,64 @@ class SettingsViewModelTest {
     @Test fun aboutRemainsGlobalNavigationEffect() {
         assertEquals(SettingsEffect.OpenAbout, SettingsViewModel().onAction(SettingsAction.OpenAboutClicked))
     }
+
+    @Test
+    fun updateApiKeyConfigured_trueUpdatesState() {
+        val vm = SettingsViewModel()
+
+        assertFalse(vm.uiState.value.apiKeyConfigured)
+
+        vm.updateApiKeyConfigured(true)
+
+        assertTrue(vm.uiState.value.apiKeyConfigured)
+    }
+
+    @Test
+    fun updateApiKeyConfigured_falseUpdatesState() {
+        val vm = SettingsViewModel(
+            SettingsUiState(apiKeyConfigured = true)
+        )
+
+        assertTrue(vm.uiState.value.apiKeyConfigured)
+
+        vm.updateApiKeyConfigured(false)
+
+        assertFalse(vm.uiState.value.apiKeyConfigured)
+    }
+
+    @Test
+    fun updateApiKeyConfigured_preservesOtherUiState() {
+        val vm = SettingsViewModel()
+
+        vm.onAction(SettingsAction.OpenApiKeyClicked)
+        vm.onAction(SettingsAction.ApiKeyChanged("draft-key"))
+
+        vm.updateApiKeyConfigured(true)
+
+        assertTrue(vm.uiState.value.apiKeyConfigured)
+        assertEquals(
+            SettingsPage.API_KEY,
+            vm.uiState.value.page
+        )
+        assertEquals(
+            "draft-key",
+            vm.uiState.value.apiKeyDraft
+        )
+    }
+
+    @Test
+    fun repositoryStatus_allowsRemoveConfirmation() {
+        val vm = SettingsViewModel()
+
+        vm.updateApiKeyConfigured(true)
+
+        vm.onAction(SettingsAction.RequestRemoveKeyClicked)
+
+        assertTrue(vm.uiState.value.confirmRemoveKey)
+
+        assertEquals(
+            SettingsEffect.RemoveKey,
+            vm.onAction(SettingsAction.RemoveKeyClicked)
+        )
+    }
 }
