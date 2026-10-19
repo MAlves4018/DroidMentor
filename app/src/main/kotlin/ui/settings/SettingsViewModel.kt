@@ -54,4 +54,10 @@ class SettingsViewModel(initialState: SettingsUiState = SettingsUiState()) : Vie
             }
         }
     }
+
+    fun updateApiKeyConfigured(configured: Boolean) {
+        mutableUiState.value = mutableUiState.value.copy(
+            apiKeyConfigured = configured
+        )
+    }
 }
