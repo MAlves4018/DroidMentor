@@ -27,6 +27,7 @@ import org.junit.Test
 import platform.connectivity.ConnectivityChecker
 import java.io.IOException
 import java.net.SocketTimeoutException
+import kotlinx.coroutines.CompletableDeferred
 
 class GeminiMentorProviderTest {
 
@@ -254,12 +255,70 @@ class GeminiMentorProviderTest {
         )
     }
 
+
     @Test
-    fun `HTTP 429 maps to RateLimited`() = runTest {
-        assertHttpFailure<ProviderFailure.RateLimited>(
+    fun `HTTP 429 without Retry-After maps to RateLimited`() = runTest {
+        val failure = assertHttpFailure<ProviderFailure.RateLimited>(
             HttpStatusCode.TooManyRequests
         )
+
+        assertEquals(null, failure.retryAfter)
     }
+
+    @Test
+    fun `HTTP 429 preserves Retry-After seconds`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":429,"message":"Rate limit exceeded"}}""",
+                status = HttpStatusCode.TooManyRequests,
+                headers = headersOf(
+                    HttpHeaders.RetryAfter,
+                    "60"
+                )
+            )
+        }
+
+        val (provider, client) = createProvider(engine)
+
+        try {
+            val failure = expectFailure<ProviderFailure.RateLimited> {
+                provider.generateReply(history, testApiKey)
+            }
+
+            assertEquals("60", failure.retryAfter)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun `HTTP 429 preserves Retry-After HTTP date`() = runTest {
+        val retryDate = "Wed, 28 Oct 2026 12:00:00 GMT"
+
+        val engine = MockEngine {
+            respond(
+                content = """{"error":{"code":429,"message":"Rate limit exceeded"}}""",
+                status = HttpStatusCode.TooManyRequests,
+                headers = headersOf(
+                    HttpHeaders.RetryAfter,
+                    retryDate
+                )
+            )
+        }
+
+        val (provider, client) = createProvider(engine)
+
+        try {
+            val failure = expectFailure<ProviderFailure.RateLimited> {
+                provider.generateReply(history, testApiKey)
+            }
+
+            assertEquals(retryDate, failure.retryAfter)
+        } finally {
+            client.close()
+        }
+    }
+
 
     @Test
     fun `HTTP 500 maps to ServerError`() = runTest {
@@ -462,23 +521,31 @@ class GeminiMentorProviderTest {
         }
     }
 
+
     @Test
-    fun `coroutine cancellation is preserved`() = runTest {
+    fun `coroutine cancellation is preserved after HTTP request starts`() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+
         val engine = MockEngine {
+            // Signal that the HTTP request reached MockEngine.
+            requestStarted.complete(Unit)
+
+            // Simulate a slow API response.
+            // Cancellation should interrupt this suspension.
             delay(60_000)
 
             respond(
                 content = """
+                {
+                  "candidates": [
                     {
-                      "candidates": [
-                        {
-                          "content": {
-                            "parts": [{"text": "Late reply"}]
-                          }
-                        }
-                      ]
+                      "content": {
+                        "parts": [{"text": "Late reply"}]
+                      }
                     }
-                """.trimIndent(),
+                  ]
+                }
+            """.trimIndent(),
                 status = HttpStatusCode.OK,
                 headers = jsonHeaders
             )
@@ -491,6 +558,11 @@ class GeminiMentorProviderTest {
                 provider.generateReply(history, testApiKey)
             }
 
+            // Do not cancel until MockEngine confirms
+            // that the HTTP request has started.
+            requestStarted.await()
+
+            // Cancel the active request and wait for termination.
             job.cancelAndJoin()
 
             assertTrue(job.isCancelled)

@@ -30,8 +30,16 @@ sealed class ProviderFailure(
     /**
      * The provider rejected the request due to rate limits.
      * HTTP 429.
+     *
+     * retryAfter preserves the optional Retry-After header.
+     * It may contain a delay in seconds (e.g. "60")
+     * or an HTTP date.
+     *
+     * null means the server did not provide the header.
      */
-    data object RateLimited : ProviderFailure(
+    data class RateLimited(
+        val retryAfter: String? = null
+    ) : ProviderFailure(
         "Too many requests. Please try again later."
     )
 

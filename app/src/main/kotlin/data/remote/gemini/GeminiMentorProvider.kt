@@ -91,7 +91,9 @@ class GeminiMentorProvider(
                 }
 
                 429 -> {
-                    throw ProviderFailure.RateLimited
+                    throw ProviderFailure.RateLimited(
+                        retryAfter = response.headers[HttpHeaders.RetryAfter]
+                    )
                 }
 
                 in 500..599 -> {
