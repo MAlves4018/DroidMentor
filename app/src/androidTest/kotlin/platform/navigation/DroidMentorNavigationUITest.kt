@@ -17,6 +17,9 @@ import ui.historyChat.HistoryTestTags
 import ui.theme.DroidMentorTheme
 import ui.title.TitleTestTags
 import androidx.test.espresso.Espresso
+import isel.dei.pdm.droidmentor.DroidMentorApplication
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.assertCountEquals
 
 class DroidMentorNavigationUiTest {
 
@@ -25,6 +28,17 @@ class DroidMentorNavigationUiTest {
         createAndroidComposeRule<ComponentActivity>()
 
     private fun launchApp() {
+        val repository =
+            (composeRule.activity.application as DroidMentorApplication)
+                .conversations
+
+        composeRule.runOnUiThread {
+            repository.conversations.toList().forEach {
+                repository.delete(it.id)
+            }
+            repository.leaveActive()
+        }
+
         composeRule.setContent {
             DroidMentorTheme(darkTheme = false) {
                 DroidMentorNavigation()
@@ -263,7 +277,7 @@ class DroidMentorNavigationUiTest {
             .performTextInput("History observes live changes")
         composeRule.onNodeWithTag(ActiveChatTestTags.SEND_ACTION).performClick()
         openHistory()
-        composeRule.onNodeWithText("History observes live changes").assertIsDisplayed()
+        composeRule.onAllNodesWithText("History observes live changes").assertCountEquals(2)
     }
 
     @Test

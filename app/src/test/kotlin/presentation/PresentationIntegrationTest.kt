@@ -6,7 +6,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import data.InMemorySettingsRepository
+import test.MainDispatcherRule
 import platform.navigation.DroidMentorDestination
 import platform.navigation.DroidMentorNavigator
 import test.fakes.FakeConversationRepository
@@ -26,7 +32,9 @@ import ui.title.TitleViewModel
 /** Contract tests across existing ViewModels + the same fake repository + router.
  * No Android, Gemini, Room, or implementation of future ARCH-001 interfaces.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class PresentationIntegrationTest {
+    @get:Rule val mainDispatcherRule = MainDispatcherRule()
     private fun chat(repo: FakeConversationRepository, id: ConversationId, prefix: String): ActiveChatViewModel {
         var index = 0
         return ActiveChatViewModel(id, repo, newMessageId = { MessageId("$prefix-${++index}") })
@@ -132,15 +140,22 @@ class PresentationIntegrationTest {
         assertEquals(DroidMentorDestination.Title, nav.currentDestination)
     }
 
-    @Test fun settingsDraftAndNavigation_doNotTouchConversations() {
-        val repo = FakeConversationRepository()
-        val settings = SettingsViewModel()
-        settings.onAction(SettingsAction.ApiKeyChanged("not-a-real-api-key"))
-        val effect = settings.onAction(SettingsAction.SaveKeyClicked)
-        assertEquals(SettingsEffect.SaveKey("not-a-real-api-key"), effect)
-        assertTrue(settings.uiState.value.canSave)
-        assertTrue(repo.conversations.isEmpty())
-        assertFalse(settings.uiState.value.apiKeyConfigured) // No persistence yet.
+    @Test fun settingsDraftAndNavigation_doNotTouchConversations() = runTest {
+        val conversations = FakeConversationRepository()
+        val settingsRepository = InMemorySettingsRepository()
+        val settings = SettingsViewModel(settingsRepository)
+        advanceUntilIdle()
+        settings.onAction(SettingsAction.ApiKeyChanged("dummy-api-key"))
+        assertNull(settings.onAction(SettingsAction.SaveKeyClicked))
+        advanceUntilIdle()
+        assertEquals("dummy-api-key", settingsRepository.getApiKey())
+        assertTrue(settings.uiState.value.apiKeyConfigured)
+        assertTrue(conversations.conversations.isEmpty())
+        settings.onAction(SettingsAction.RequestRemoveKeyClicked)
+        settings.onAction(SettingsAction.RemoveKeyClicked)
+        advanceUntilIdle()
+        assertNull(settingsRepository.getApiKey())
+        assertTrue(conversations.conversations.isEmpty())
     }
 
     @Test fun titleSendRemainsExplicitlyOutOfScope() {
