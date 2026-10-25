@@ -43,18 +43,28 @@ fun SettingsApiKeyScreen(
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
         )
         Text(
-            "The API key will be stored on this device when the settings service is connected.",
+            "The key is stored locally on this device, outside automatic backups. Gemini validates it when used.",
             modifier = Modifier.padding(top = 12.dp, bottom = 28.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (state.isLoading) {
+            Text("Reading saved settings…", style = MaterialTheme.typography.bodySmall)
+        }
+        if (state.errorMessage != null) {
+            Text(
+                text = state.errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
         Button(
             onClick = { onAction(SettingsAction.SaveKeyClicked) },
             enabled = state.canSave,
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth().testTag(SettingsTestTags.SAVE_KEY),
-        ) { Text("Save") }
-        if (state.apiKeyConfigured) {
+        ) { Text(if (state.isSaving) "Saving…" else "Save") }
+        if (state.apiKeyConfigured && !state.isLoading && !state.isSaving) {
             TextButton(
                 onClick = { onAction(SettingsAction.RequestRemoveKeyClicked) },
                 modifier = Modifier.padding(top = 9.dp).testTag(SettingsTestTags.REMOVE_KEY),

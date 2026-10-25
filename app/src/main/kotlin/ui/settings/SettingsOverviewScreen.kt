@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 fun SettingsOverviewScreen(
     isDarkTheme: Boolean,
     apiKeyConfigured: Boolean,
+    isLoading: Boolean = false,
     onThemeToggle: () -> Unit,
     onOpenApiKey: () -> Unit,
     onOpenAbout: () -> Unit,
@@ -79,7 +80,15 @@ fun SettingsOverviewScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("API key", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-            Text(if (apiKeyConfigured) "Configured  ›" else "Not configured  ›", color = muted, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                when {
+                    isLoading -> "Checking… ›"
+                    apiKeyConfigured -> "Configured  ›"
+                    else -> "Not configured  ›"
+                },
+                color = muted,
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Text("ABOUT", modifier = Modifier.padding(top = 27.dp), color = muted, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)

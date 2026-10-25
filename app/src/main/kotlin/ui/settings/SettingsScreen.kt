@@ -30,6 +30,7 @@ fun SettingsScreen(
             SettingsPage.OVERVIEW -> SettingsOverviewScreen(
                 isDarkTheme = isDarkTheme,
                 apiKeyConfigured = state.apiKeyConfigured,
+                isLoading = state.isLoading,
                 onThemeToggle = { onAction(SettingsAction.ToggleThemeClicked) },
                 onOpenApiKey = { onAction(SettingsAction.OpenApiKeyClicked) },
                 onOpenAbout = { onAction(SettingsAction.OpenAboutClicked) },
@@ -45,7 +46,7 @@ fun SettingsScreen(
     if (state.confirmRemoveKey) {
         ConfirmDialog(
             title = "Remove API key?",
-            message = "The configured key will be removed from this device.",
+            message = state.errorMessage ?: "The configured key will be removed from this device.",
             confirmLabel = "Remove",
             onConfirm = { onAction(SettingsAction.RemoveKeyClicked) },
             onCancel = { onAction(SettingsAction.CancelRemoveKeyClicked) },

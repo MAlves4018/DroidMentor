@@ -1,62 +1,48 @@
 package isel.dei.pdm.droidmentor
 
 import android.app.Application
-
-import data.InMemorySettingsRepository
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import data.remote.gemini.GeminiHttpClientFactory
 import data.remote.gemini.GeminiMentorProvider
+import data.settings.DataStoreSettingsRepository
 import domain.provider.MentorProvider
 import domain.repository.ConversationRepository
 import domain.repository.InMemoryConversationRepository
 import domain.repository.SettingsRepository
 import platform.connectivity.AndroidConnectivityChecker
 import platform.connectivity.ConnectivityChecker
+import java.io.File
 
-/**
- * Application-level service locator.
- */
+/** Application-level service locator. */
 class DroidMentorApplication : Application() {
 
-    /**
-     * Repository responsible for conversation data.
-     * Currently uses the existing in-memory implementation.
-     */
     val conversations: ConversationRepository by lazy {
         InMemoryConversationRepository()
     }
 
-    /**
-     * Repository responsible for application settings.
-     * Currently uses the existing in-memory implementation.
-     */
-    val settings: SettingsRepository by lazy {
-        InMemorySettingsRepository()
+    // Single DataStore per file. noBackupFilesDir excludes the key from Android backups.
+    private val keyStore by lazy {
+        PreferenceDataStoreFactory.create(
+            produceFile = { File(noBackupFilesDir, "droidmentor_gemini.preferences_pb") },
+        )
     }
 
-    /**
-     * Checks the device's network connectivity.
-     */
+    val settings: SettingsRepository by lazy {
+        DataStoreSettingsRepository(keyStore)
+    }
+
     val connectivityChecker: ConnectivityChecker by lazy {
         AndroidConnectivityChecker(this)
     }
 
-    /**
-     * Shared Ktor HTTP client.
-     * Created once and reused across Gemini requests.
-     */
     private val geminiHttpClient by lazy {
         GeminiHttpClientFactory.create()
     }
 
-    /**
-     * Real Gemini implementation of MentorProvider.
-     * The rest of the application depends only on
-     * the domain interface, not the Gemini implementation.
-     */
     val mentor: MentorProvider by lazy {
         GeminiMentorProvider(
             client = geminiHttpClient,
-            connectivityChecker = connectivityChecker
+            connectivityChecker = connectivityChecker,
         )
     }
 }
