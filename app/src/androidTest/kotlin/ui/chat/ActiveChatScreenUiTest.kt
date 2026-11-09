@@ -291,6 +291,36 @@ class ActiveChatScreenUiTest {
         assertEquals(ActiveChatAction.ConfirmRewriteClicked, actions.last())
     }
 
+    @Test
+    fun contentBlocked_showsSpecificFeedback_andDismisses() {
+        val actions = mutableListOf<ActiveChatAction>()
+        setScreen(
+            state = ActiveChatUiState(
+                requestState = ChatRequestState.Error(ChatErrorKind.CONTENT_BLOCKED),
+            ),
+            onAction = actions::add,
+        )
+
+        composeRule.onNodeWithText("Response blocked").assertExists()
+        composeRule.onNodeWithText("Dismiss").performClick()
+        assertEquals(ActiveChatAction.DismissFeedbackClicked, actions.last())
+    }
+
+    @Test
+    fun responseTruncated_showsSpecificFeedback_andRetry() {
+        val actions = mutableListOf<ActiveChatAction>()
+        setScreen(
+            state = ActiveChatUiState(
+                requestState = ChatRequestState.Error(ChatErrorKind.RESPONSE_TRUNCATED),
+            ),
+            onAction = actions::add,
+        )
+
+        composeRule.onNodeWithText("Response incomplete").assertExists()
+        composeRule.onNodeWithText("Retry").performClick()
+        assertEquals(ActiveChatAction.RetryClicked, actions.last())
+    }
+
     private fun setScreen(
         state: ActiveChatUiState,
         onAction: (ActiveChatAction) -> Unit = {},

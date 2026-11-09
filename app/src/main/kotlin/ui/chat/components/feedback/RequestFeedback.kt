@@ -54,6 +54,13 @@ fun RequestFeedback(
             val action: () -> Unit
 
             when (error) {
+                ChatErrorKind.OFFLINE -> {
+                    title = "You're offline"
+                    message = "Connect to the internet and retry. Your user message was preserved."
+                    actionLabel = "Retry"
+                    action = onRetry
+                }
+
                 ChatErrorKind.INVALID_API_KEY -> {
                     title = "API key couldn't be used"
                     message = "Check or replace the key in Settings."
@@ -92,6 +99,20 @@ fun RequestFeedback(
                 ChatErrorKind.PROTOCOL -> {
                     title = "Unexpected response"
                     message = "The provider returned a response DroidMentor could not understand."
+                    actionLabel = "Retry"
+                    action = onRetry
+                }
+
+                ChatErrorKind.CONTENT_BLOCKED -> {
+                    title = "Response blocked"
+                    message = "The mentor couldn't answer this request. Try rephrasing your question."
+                    actionLabel = "Dismiss"
+                    action = onDismiss
+                }
+
+                ChatErrorKind.RESPONSE_TRUNCATED -> {
+                    title = "Response incomplete"
+                    message = "The reply stopped before completion. Retry or shorten your question."
                     actionLabel = "Retry"
                     action = onRetry
                 }

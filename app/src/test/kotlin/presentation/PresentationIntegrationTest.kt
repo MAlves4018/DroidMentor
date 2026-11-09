@@ -28,6 +28,12 @@ import ui.settings.SettingsViewModel
 import ui.title.TitleAction
 import ui.title.TitleEffect
 import ui.title.TitleViewModel
+import domain.model.Message
+import domain.model.Role
+import domain.provider.MentorProvider
+import domain.usecase.SendMessageUseCase
+import kotlinx.coroutines.runBlocking
+import ui.chat.ActiveChatUiState
 
 /** Contract tests across existing ViewModels + the same fake repository + router.
  * No Android, Gemini, Room, or implementation of future ARCH-001 interfaces.
@@ -37,8 +43,22 @@ class PresentationIntegrationTest {
     @get:Rule val mainDispatcherRule = MainDispatcherRule()
     private fun chat(repo: FakeConversationRepository, id: ConversationId, prefix: String): ActiveChatViewModel {
         var index = 0
-        return ActiveChatViewModel(id, repo, newMessageId = { MessageId("$prefix-${++index}") })
+        val settings = InMemorySettingsRepository()
+        runBlocking { settings.saveApiKey("test-only-key") }
+        val provider = object : MentorProvider {
+            override suspend fun generateReply(history: List<Message>, apiKey: String) =
+                "Test mentor reply"
+        }
+        return ActiveChatViewModel(
+            conversationId = id,
+            repository = repo,
+            settingsRepository = settings,
+            sendMessageUseCase = SendMessageUseCase(provider, settings),
+            initialUiState = ActiveChatUiState(providerConfigured = true),
+            newMessageId = { MessageId("$prefix-${++index}") },
+        )
     }
+
 
     @Test fun titleNewChat_createsRepositoryConversationThroughNavigator() {
         val repo = FakeConversationRepository()
@@ -50,15 +70,19 @@ class PresentationIntegrationTest {
         assertEquals(repo.activeId, navigator.currentConversationId)
     }
 
-    @Test fun sendAndEdit_projectIntoHistoryWithoutSecondStore() {
+    @Test fun sendAndEdit_projectIntoHistoryWithoutSecondStore() = runTest {
         val repo = FakeConversationRepository()
         val id = repo.create().id
         val vm = chat(repo, id, "msg")
         vm.onAction(ActiveChatAction.DraftChanged("First question"))
         vm.onAction(ActiveChatAction.SendClicked)
+        advanceUntilIdle()
         vm.onAction(ActiveChatAction.DraftChanged("Following question"))
         vm.onAction(ActiveChatAction.SendClicked)
-        assertEquals(2, repo.find(id)!!.messages.size)
+        advanceUntilIdle()
+        assertEquals(4, repo.find(id)!!.messages.size)
+        assertEquals(2, repo.find(id)!!.messages.count { it.role == Role.USER })
+        assertEquals(2, repo.find(id)!!.messages.count { it.role == Role.MODEL })
 
         val history = HistoryViewModel(repo)
         assertEquals("First question", history.uiState.value.groups.single().conversations.single().title)

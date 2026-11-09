@@ -9,8 +9,16 @@ import org.junit.Test
 import test.fakes.FakeConversationRepository
 import test.fixtures.ConversationFixtures
 import ui.chat.model.MessageEditState
+import data.InMemorySettingsRepository
+import domain.model.Message
+import domain.provider.MentorProvider
+import domain.usecase.SendMessageUseCase
+import kotlinx.coroutines.runBlocking
+import org.junit.Rule
+import test.MainDispatcherRule
 
 class ActiveChatViewModelTest {
+    @get:Rule val mainDispatcherRule = MainDispatcherRule()
     @Test fun sendPersistsToRepository_andClearsDraft() {
         val repository = FakeConversationRepository()
         val conversation = repository.create()
@@ -122,9 +130,20 @@ class ActiveChatViewModelTest {
         repository: FakeConversationRepository,
         id: ConversationId,
         newMessageId: String,
-    ) = ActiveChatViewModel(
-        conversationId = id,
-        repository = repository,
-        newMessageId = { MessageId(newMessageId) },
-    )
+    ): ActiveChatViewModel {
+        val settings = InMemorySettingsRepository()
+        runBlocking { settings.saveApiKey("test-only-key") }
+        val provider = object : MentorProvider {
+            override suspend fun generateReply(history: List<Message>, apiKey: String) =
+                "Controlled test answer"
+        }
+        return ActiveChatViewModel(
+            conversationId = id,
+            repository = repository,
+            settingsRepository = settings,
+            sendMessageUseCase = SendMessageUseCase(provider, settings),
+            initialUiState = ActiveChatUiState(providerConfigured = true),
+            newMessageId = { MessageId(newMessageId) },
+        )
+    }
 }

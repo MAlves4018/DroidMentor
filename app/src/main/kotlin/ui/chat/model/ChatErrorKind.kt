@@ -1,11 +1,14 @@
 package ui.chat.model
 
 enum class ChatErrorKind {
+    OFFLINE,
     INVALID_API_KEY,
     RATE_LIMITED,
     SERVER_UNAVAILABLE,
     TIMEOUT,
     TRANSPORT,
     PROTOCOL,
+    CONTENT_BLOCKED,
+    RESPONSE_TRUNCATED,
     GENERIC_PROVIDER_ERROR,
 }

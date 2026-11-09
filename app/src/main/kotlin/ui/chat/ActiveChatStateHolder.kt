@@ -51,6 +51,39 @@ class ActiveChatStateHolder(
     val currentConversation: Conversation
         get() = conversation
 
+    /** Provider readiness is observed by the ViewModel, never guessed by Compose. */
+    fun setProviderConfigured(configured: Boolean) {
+        state = state.copy(providerConfigured = configured)
+    }
+
+    fun setRequestState(requestState: ChatRequestState) {
+        state = state.copy(requestState = requestState)
+    }
+
+    /** Commit exactly one MODEL message after a successful provider response. */
+    fun appendModelReply(text: String): Boolean {
+        val content = text.trim()
+        if (isPersisting || state.requestState !is ChatRequestState.Generating || content.isEmpty()) {
+            return false
+        }
+        val message = Message(
+            id = newMessageId(),
+            role = Role.MODEL,
+            content = content,
+            sequence = conversation.nextSequence,
+        )
+        val updated = conversation.append(message)
+        isPersisting = true
+        try {
+            onConversationChanged(updated)
+            conversation = updated
+            state = state.copy(messages = updated.toChatMessagesUi())
+            return true
+        } finally {
+            isPersisting = false
+        }
+    }
+
     fun onAction(action: ActiveChatAction) {
         if (isPersisting) return
 
