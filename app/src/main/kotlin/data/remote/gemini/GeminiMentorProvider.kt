@@ -1,3 +1,4 @@
+
 package data.remote.gemini
 
 import domain.model.Message
@@ -26,10 +27,9 @@ import java.net.SocketTimeoutException
  * - Check connectivity before sending requests.
  * - Convert conversation history into Gemini DTOs.
  * - Send requests through Ktor.
- * - Extract generated text from successful responses.
+ * - Interpret Gemini generation results.
  * - Convert failures into ProviderFailure.
  * - Preserve coroutine cancellation.
- *
  */
 class GeminiMentorProvider(
     private val client: HttpClient,
@@ -43,11 +43,21 @@ class GeminiMentorProvider(
 
         private const val DEFAULT_BASE_URL =
             "https://generativelanguage.googleapis.com/v1beta"
+
+        private val BLOCKED_FINISH_REASONS = setOf(
+            "SAFETY",
+            "RECITATION",
+            "BLOCKLIST",
+            "PROHIBITED_CONTENT",
+            "SPII",
+            "IMAGE_SAFETY",
+            "MODEL_ARMOR"
+        )
     }
 
     /**
-     * Generates a mentor reply using the complete
-     * conversation history.
+     * Generates a mentor reply using the supplied
+     * local conversation history and BYOK key.
      *
      * @throws ProviderFailure when the request fails.
      * @throws CancellationException when cancelled.
@@ -72,9 +82,7 @@ class GeminiMentorProvider(
                 "${baseUrl.trimEnd('/')}/models/$model:generateContent"
             ) {
                 contentType(ContentType.Application.Json)
-
                 header("x-goog-api-key", apiKey)
-
                 setBody(request)
             }
 
@@ -110,11 +118,9 @@ class GeminiMentorProvider(
             }
 
         } catch (e: CancellationException) {
-            // Cancellation must propagate to the caller.
             throw e
 
         } catch (e: ProviderFailure) {
-            // Already normalized. Preserve the failure.
             throw e
 
         } catch (e: HttpRequestTimeoutException) {
@@ -133,35 +139,70 @@ class GeminiMentorProvider(
             throw ProviderFailure.Transport(e)
 
         } catch (e: Exception) {
-            // Unexpected failures are not exposed as
-            // raw exceptions to the application.
             throw ProviderFailure.Protocol(e)
         }
     }
 
     /**
-     * Extracts the generated text from Gemini's
-     * first response candidate.
+     * Interprets Gemini's response.
      *
-     * A response without usable text is considered
-     * a protocol failure.
+     * Blocked and truncated responses are valid API
+     * outcomes, not malformed JSON.
+     *
+     * Only a completed response with usable text
+     * is returned as a successful mentor reply.
      */
     private fun extractText(
         response: GeminiGenerateContentResponse
     ): String {
 
+        // Gemini may reject the prompt before
+        // generating any candidates.
+        val promptBlockReason =
+            response.promptFeedback?.blockReason
+
+        if (!promptBlockReason.isNullOrBlank()) {
+            throw ProviderFailure.ContentBlocked(
+                reason = promptBlockReason
+            )
+        }
+
         val candidate = response.candidates.firstOrNull()
             ?: throw ProviderFailure.Protocol()
 
-        val content = candidate.content
-            ?: throw ProviderFailure.Protocol()
+        val text = candidate.content
+            ?.parts
+            ?.joinToString(separator = "") { it.text }
+            ?.trim()
 
-        val text = content.parts
-            .map { it.text }
-            .joinToString(separator = "")
-            .trim()
+        // Check the finish reason before returning text.
+        // A truncated or blocked response may still
+        // contain partial generated content.
+        when (val finishReason = candidate.finishReason) {
+            "MAX_TOKENS" -> {
+                throw ProviderFailure.ResponseTruncated(
+                    partialText = text?.takeIf { it.isNotBlank() }
+                )
+            }
 
-        if (text.isBlank()) {
+            in BLOCKED_FINISH_REASONS -> {
+                throw ProviderFailure.ContentBlocked(
+                    reason = finishReason
+                )
+            }
+
+            "STOP", null -> {
+                // Continue with normal text validation.
+            }
+
+            else -> {
+                // Unknown or unsuccessful finish reason.
+                // Do not silently treat it as success.
+                throw ProviderFailure.Protocol()
+            }
+        }
+
+        if (text.isNullOrBlank()) {
             throw ProviderFailure.Protocol()
         }
 

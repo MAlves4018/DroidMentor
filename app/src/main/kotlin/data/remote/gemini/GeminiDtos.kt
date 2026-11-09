@@ -41,10 +41,32 @@ data class GeminiPart(
 /**
  * Response body returned by Gemini's
  * generateContent endpoint.
+ *
+ * A blocked prompt may contain promptFeedback
+ * without any generated candidates.
  */
 @Serializable
 data class GeminiGenerateContentResponse(
-    val candidates: List<GeminiCandidate> = emptyList()
+    val candidates: List<GeminiCandidate> = emptyList(),
+
+    val promptFeedback: GeminiPromptFeedback? = null
+)
+
+/**
+ * Feedback about the input prompt.
+ *
+ * Gemini may reject a prompt before generating
+ * any candidate response.
+ *
+ * Example blockReason values:
+ * - SAFETY
+ * - BLOCKLIST
+ * - PROHIBITED_CONTENT
+ * - OTHER
+ */
+@Serializable
+data class GeminiPromptFeedback(
+    val blockReason: String? = null
 )
 
 /**
@@ -52,6 +74,13 @@ data class GeminiGenerateContentResponse(
  *
  * A candidate may not contain usable content,
  * for example when generation is blocked.
+ *
+ * finishReason indicates why generation stopped.
+ *
+ * Examples:
+ * - STOP: normal completion
+ * - MAX_TOKENS: response was truncated
+ * - SAFETY: generation was blocked
  */
 @Serializable
 data class GeminiCandidate(
