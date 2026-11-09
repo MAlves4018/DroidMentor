@@ -93,4 +93,35 @@ sealed class ProviderFailure(
     ) : ProviderFailure(
         "Provider request failed (HTTP $statusCode)."
     )
+
+    /**
+     * Gemini blocked generation or rejected the prompt.
+     *
+     * Examples include safety filtering and other
+     * provider-defined blocking reasons.
+     *
+     * This is not a malformed response.
+     */
+    data class ContentBlocked(
+        val reason: String? = null
+    ) : ProviderFailure(
+        "The provider blocked the requested content."
+    )
+
+    /**
+     * Gemini stopped generating because it reached
+     * its output token limit.
+     *
+     * The partial response is preserved for diagnostics
+     * or future application-level handling.
+     *
+     * A truncated response must not be treated as
+     * a successfully completed answer.
+     */
+    data class ResponseTruncated(
+        val partialText: String? = null
+    ) : ProviderFailure(
+        "The provider response was truncated."
+    )
+
 }

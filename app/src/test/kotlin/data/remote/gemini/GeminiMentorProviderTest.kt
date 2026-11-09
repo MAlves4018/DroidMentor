@@ -28,6 +28,10 @@ import platform.connectivity.ConnectivityChecker
 import java.io.IOException
 import java.net.SocketTimeoutException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class GeminiMentorProviderTest {
 
@@ -135,50 +139,111 @@ class GeminiMentorProviderTest {
     }
 
     @Test
-    fun `request contains API key and complete history`() = runTest {
+    fun `request uses ordered local history system instruction and BYOK key`() = runTest {
         var requestReceived = false
+
+        // Deliberately provide messages out of sequence.
+        val unorderedHistory = listOf(
+            history[2],
+            history[0],
+            history[1]
+        )
 
         val engine = MockEngine { request ->
             requestReceived = true
 
+            // Verify the exact endpoint and HTTP method.
+            assertEquals("POST", request.method.value)
             assertEquals(
-                "test-api-key",
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+                request.url.toString()
+            )
+
+            // Verify the supplied BYOK key is used.
+            assertEquals(
+                testApiKey,
                 request.headers["x-goog-api-key"]
             )
 
-            assertEquals(
-                "POST",
-                request.method.value
-            )
+            // Parse the actual serialized request body.
+            val body = Json.parseToJsonElement(
+                request.body.toByteArray().decodeToString()
+            ).jsonObject
+
+            // Verify that the Android mentor instruction exists.
+            val instruction = body
+                .getValue("system_instruction")
+                .jsonObject
+
+            val instructionText = instruction
+                .getValue("parts")
+                .jsonArray
+                .first()
+                .jsonObject
+                .getValue("text")
+                .jsonPrimitive
+                .content
 
             assertTrue(
-                request.url.toString().contains(
-                    "generateContent"
-                )
+                instructionText.contains("Android", ignoreCase = true)
             )
 
-            val body = request.body.toByteArray()
-                .decodeToString()
+            // Verify exactly three conversation messages.
+            val contents = body
+                .getValue("contents")
+                .jsonArray
 
-            assertTrue(body.contains("system_instruction"))
-            assertTrue(body.contains("What is a ViewModel?"))
-            assertTrue(body.contains("A ViewModel manages UI state."))
-            assertTrue(body.contains("Can you explain StateFlow?"))
-            assertTrue(body.contains("\"role\":\"user\""))
-            assertTrue(body.contains("\"role\":\"model\""))
+            assertEquals(3, contents.size)
+
+            val roles = contents.map { content ->
+                content.jsonObject
+                    .getValue("role")
+                    .jsonPrimitive
+                    .content
+            }
+
+            assertEquals(
+                listOf("user", "model", "user"),
+                roles
+            )
+
+            val messages = contents.map { content ->
+                content.jsonObject
+                    .getValue("parts")
+                    .jsonArray
+                    .first()
+                    .jsonObject
+                    .getValue("text")
+                    .jsonPrimitive
+                    .content
+            }
+
+            // Verify message ordering, not just presence.
+            assertEquals(
+                listOf(
+                    "What is a ViewModel?",
+                    "A ViewModel manages UI state.",
+                    "Can you explain StateFlow?"
+                ),
+                messages
+            )
 
             respond(
                 content = """
+                {
+                  "candidates": [
                     {
-                      "candidates": [
-                        {
-                          "content": {
-                            "parts": [{"text": "Test reply"}]
-                          }
-                        }
-                      ]
+                      "content": {
+                        "role": "model",
+                        "parts": [
+                          {"text": "StateFlow is a hot Flow."}
+                        ]
+                      },
+                      "finishReason": "STOP"
                     }
-                """.trimIndent(),
+                  ]
+                }
+            """.trimIndent(),
                 status = HttpStatusCode.OK,
                 headers = jsonHeaders
             )
@@ -187,8 +252,13 @@ class GeminiMentorProviderTest {
         val (provider, client) = createProvider(engine)
 
         try {
-            provider.generateReply(history, testApiKey)
+            val reply = provider.generateReply(
+                unorderedHistory,
+                testApiKey
+            )
+
             assertTrue(requestReceived)
+            assertEquals("StateFlow is a hot Flow.", reply)
         } finally {
             client.close()
         }
@@ -566,6 +636,239 @@ class GeminiMentorProviderTest {
             job.cancelAndJoin()
 
             assertTrue(job.isCancelled)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun `STOP finish reason returns completed text`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                {
+                  "candidates": [
+                    {
+                      "content": {
+                        "role": "model",
+                        "parts": [
+                          {"text": "Use StateFlow to expose UI state."}
+                        ]
+                      },
+                      "finishReason": "STOP"
+                    }
+                  ]
+                }
+            """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = jsonHeaders
+            )
+        }
+
+        val (provider, client) = createProvider(engine)
+
+        try {
+            val reply = provider.generateReply(history, testApiKey)
+
+            assertEquals(
+                "Use StateFlow to expose UI state.",
+                reply
+            )
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun `MAX_TOKENS preserves partial text as truncated failure`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                {
+                  "candidates": [
+                    {
+                      "content": {
+                        "parts": [
+                          {"text": "A ViewModel is"}
+                        ]
+                      },
+                      "finishReason": "MAX_TOKENS"
+                    }
+                  ]
+                }
+            """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = jsonHeaders
+            )
+        }
+
+        val (provider, client) = createProvider(engine)
+
+        try {
+            val failure =
+                expectFailure<ProviderFailure.ResponseTruncated> {
+                    provider.generateReply(history, testApiKey)
+                }
+
+            assertEquals("A ViewModel is", failure.partialText)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun `MAX_TOKENS without text is still truncated`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                {
+                  "candidates": [
+                    {
+                      "finishReason": "MAX_TOKENS"
+                    }
+                  ]
+                }
+            """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = jsonHeaders
+            )
+        }
+
+        val (provider, client) = createProvider(engine)
+
+        try {
+            val failure =
+                expectFailure<ProviderFailure.ResponseTruncated> {
+                    provider.generateReply(history, testApiKey)
+                }
+
+            assertEquals(null, failure.partialText)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun `SAFETY finish reason maps to ContentBlocked`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                {
+                  "candidates": [
+                    {
+                      "finishReason": "SAFETY"
+                    }
+                  ]
+                }
+            """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = jsonHeaders
+            )
+        }
+
+        val (provider, client) = createProvider(engine)
+
+        try {
+            val failure =
+                expectFailure<ProviderFailure.ContentBlocked> {
+                    provider.generateReply(history, testApiKey)
+                }
+
+            assertEquals("SAFETY", failure.reason)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun `RECITATION finish reason maps to ContentBlocked`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                {
+                  "candidates": [
+                    {
+                      "finishReason": "RECITATION"
+                    }
+                  ]
+                }
+            """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = jsonHeaders
+            )
+        }
+
+        val (provider, client) = createProvider(engine)
+
+        try {
+            val failure =
+                expectFailure<ProviderFailure.ContentBlocked> {
+                    provider.generateReply(history, testApiKey)
+                }
+
+            assertEquals("RECITATION", failure.reason)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun `promptFeedback blocking without candidates maps to ContentBlocked`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                {
+                  "promptFeedback": {
+                    "blockReason": "SAFETY"
+                  }
+                }
+            """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = jsonHeaders
+            )
+        }
+
+        val (provider, client) = createProvider(engine)
+
+        try {
+            val failure =
+                expectFailure<ProviderFailure.ContentBlocked> {
+                    provider.generateReply(history, testApiKey)
+                }
+
+            assertEquals("SAFETY", failure.reason)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun `unknown finish reason maps to Protocol`() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """
+                {
+                  "candidates": [
+                    {
+                      "content": {
+                        "parts": [{"text": "Incomplete answer"}]
+                      },
+                      "finishReason": "UNRECOGNIZED_REASON"
+                    }
+                  ]
+                }
+            """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = jsonHeaders
+            )
+        }
+
+        val (provider, client) = createProvider(engine)
+
+        try {
+            expectFailure<ProviderFailure.Protocol> {
+                provider.generateReply(history, testApiKey)
+            }
         } finally {
             client.close()
         }
