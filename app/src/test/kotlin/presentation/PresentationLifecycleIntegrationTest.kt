@@ -14,21 +14,41 @@ import ui.chat.ActiveChatViewModel
 import ui.historyChat.ChatHistoryAction
 import ui.historyChat.HistoryEffect
 import ui.historyChat.HistoryViewModel
+import data.InMemorySettingsRepository
+import domain.model.Message
+import domain.provider.MentorProvider
+import domain.usecase.SendMessageUseCase
+import org.junit.Rule
+import test.MainDispatcherRule
 
 /** Exercises the exact History Delete -> parent route/scope cleanup seam. */
 class PresentationLifecycleIntegrationTest {
+    @get:Rule val mainDispatcherRule = MainDispatcherRule()
     private fun model(
         scopes: ChatViewModelScopes,
         repo: FakeConversationRepository,
         id: ConversationId,
-    ): ActiveChatViewModel = ViewModelProvider(
-        scopes.ownerFor(id),
-        object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
-                ActiveChatViewModel(id, repo, newMessageId = { MessageId("msg-${id.value}") }) as T
-        },
-    )[ActiveChatViewModel::class.java]
+    ): ActiveChatViewModel {
+        val settings = InMemorySettingsRepository()
+        val provider = object : MentorProvider {
+            override suspend fun generateReply(history: List<Message>, apiKey: String) =
+                "Test mentor reply"
+        }
+        return ViewModelProvider(
+            scopes.ownerFor(id),
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                    ActiveChatViewModel(
+                        conversationId = id,
+                        repository = repo,
+                        settingsRepository = settings,
+                        sendMessageUseCase = SendMessageUseCase(provider, settings),
+                        newMessageId = { MessageId("msg-${id.value}") },
+                    ) as T
+            },
+        )[ActiveChatViewModel::class.java]
+    }
 
     @Test fun deletingA_releasesItsModelWithoutLosingBDraft() {
         val repo = FakeConversationRepository()

@@ -20,6 +20,9 @@ import androidx.test.espresso.Espresso
 import isel.dei.pdm.droidmentor.DroidMentorApplication
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.assertCountEquals
+import domain.model.Message
+import domain.model.Role
+import domain.model.identity.MessageId
 
 class DroidMentorNavigationUiTest {
 
@@ -271,13 +274,24 @@ class DroidMentorNavigationUiTest {
     }
 
     @Test
-    fun historyUpdatesAfterSendingFromActiveChat() {
+    fun historyObservesRepositoryChanges() {
         startNewChat()
-        composeRule.onNodeWithTag(ActiveChatTestTags.COMPOSER_FIELD)
-            .performTextInput("History observes live changes")
-        composeRule.onNodeWithTag(ActiveChatTestTags.SEND_ACTION).performClick()
+        val repository =
+            (composeRule.activity.application as DroidMentorApplication).conversations
+        val id = requireNotNull(repository.activeId)
+        val original = requireNotNull(repository.find(id))
+        composeRule.runOnUiThread {
+            repository.save(original.append(
+                Message(
+                    id = MessageId("history-fixture"),
+                    role = Role.USER,
+                    content = "History observes live changes",
+                    sequence = original.nextSequence,
+                )
+            ))
+        }
         openHistory()
-        composeRule.onAllNodesWithText("History observes live changes").assertCountEquals(2)
+        composeRule.onNodeWithText("History observes live changes").assertIsDisplayed()
     }
 
     @Test

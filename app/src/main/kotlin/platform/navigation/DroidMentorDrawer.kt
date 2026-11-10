@@ -31,13 +31,9 @@ fun DroidMentorDrawer(
         }
     }
 
-    LaunchedEffect(
-        drawerState.currentValue,
-        drawerState.targetValue
-    ) {
+    LaunchedEffect(drawerState.currentValue) {
         if (
             drawerState.currentValue == DrawerValue.Closed &&
-            drawerState.targetValue == DrawerValue.Closed &&
             navigator.isHistoryOpen
         ) {
             navigator.closeHistory()
