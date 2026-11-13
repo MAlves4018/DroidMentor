@@ -4,12 +4,14 @@ import domain.repository.InMemoryConversationRepository
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import ui.navigation.NavigationAction
 
 /** Each surviving chat route must agree with the repository active selection. */
 class NavigatorSelectionInvariantTest {
-    @Test fun backFromBToAReactivatesAAndPreservesResume() {
+
+    @Test fun backFromBToAReactivatesAAndPreservesResume() = runTest {
         val repo = InMemoryConversationRepository()
         val nav = DroidMentorNavigator(repository = repo)
         nav.handle(NavigationAction.NewChat)
@@ -24,7 +26,7 @@ class NavigatorSelectionInvariantTest {
         assertFalse(a == b)
     }
 
-    @Test fun backFromChatToSettingsRestoresChatUnderneath() {
+    @Test fun backFromChatToSettingsRestoresChatUnderneath() = runTest {
         val repo = InMemoryConversationRepository()
         val nav = DroidMentorNavigator(repository = repo)
         nav.handle(NavigationAction.NewChat)
@@ -39,7 +41,7 @@ class NavigatorSelectionInvariantTest {
         assertEquals(a, repo.activeId)
     }
 
-    @Test fun deletingForegroundChatReactivatesSurvivingPreviousChat() {
+    @Test fun deletingForegroundChatReactivatesSurvivingPreviousChat() = runTest {
         val repo = InMemoryConversationRepository()
         val nav = DroidMentorNavigator(repository = repo)
         nav.handle(NavigationAction.NewChat)
@@ -54,7 +56,7 @@ class NavigatorSelectionInvariantTest {
         assertEquals(a, repo.resumableId())
     }
 
-    @Test fun deletingBackgroundChatKeepsCurrentChatActive() {
+    @Test fun deletingBackgroundChatKeepsCurrentChatActive() = runTest {
         val repo = InMemoryConversationRepository()
         val nav = DroidMentorNavigator(repository = repo)
         nav.handle(NavigationAction.NewChat)

@@ -9,6 +9,7 @@ class FakeConversationRepository(
     initialConversations: List<Conversation> = emptyList(),
     initialActiveId: ConversationId? = null,
 ) : ConversationRepository {
+    override suspend fun initialize() = Unit
     private val entries = initialConversations.toMutableList()
     private var selection = initialActiveId
     private var nextId = 0
@@ -26,7 +27,7 @@ class FakeConversationRepository(
 
     override fun find(id: ConversationId): Conversation? = entries.firstOrNull { it.id == id }
 
-    override fun create(): Conversation {
+    override suspend fun create(): Conversation {
         val id = generateSequence { ConversationId("fake-conversation-${++nextId}") }
             .first { candidate -> find(candidate) == null }
         val conversation = Conversation(id)
@@ -35,13 +36,13 @@ class FakeConversationRepository(
         return conversation
     }
 
-    override fun activate(id: ConversationId): Boolean {
+    override suspend fun activate(id: ConversationId): Boolean {
         if (find(id) == null) return false
         selection = id
         return true
     }
 
-    override fun save(conversation: Conversation) {
+    override suspend fun save(conversation: Conversation) {
         val index = entries.indexOfFirst { it.id == conversation.id }
         require(index >= 0) { "Unknown conversation" }
         entries.removeAt(index)
@@ -49,13 +50,13 @@ class FakeConversationRepository(
         savedIds.add(conversation.id)
     }
 
-    override fun delete(id: ConversationId) {
+    override suspend fun delete(id: ConversationId) {
         entries.removeAll { it.id == id }
         if (selection == id) selection = null
         deletedIds.add(id)
     }
 
-    override fun leaveActive() { selection = null }
+    override suspend fun leaveActive() { selection = null }
 
     override fun resumableId(): ConversationId? = selection?.takeIf { find(it) != null }
 }

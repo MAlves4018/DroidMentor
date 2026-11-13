@@ -20,7 +20,7 @@ class ActiveChatStateHolder(
     val conversationId: ConversationId,
     initialConversation: Conversation = Conversation(conversationId),
     initialUiState: ActiveChatUiState = ActiveChatUiState(),
-    private val onConversationChanged: (Conversation) -> Unit = {},
+    private val onConversationChanged: suspend (Conversation) -> Unit = {},
     private val newMessageId: () -> MessageId = {
         MessageId(UUID.randomUUID().toString())
     },
@@ -61,7 +61,7 @@ class ActiveChatStateHolder(
     }
 
     /** Commit exactly one MODEL message after a successful provider response. */
-    fun appendModelReply(text: String): Boolean {
+    suspend fun appendModelReply(text: String): Boolean {
         val content = text.trim()
         if (isPersisting || state.requestState !is ChatRequestState.Generating || content.isEmpty()) {
             return false
@@ -84,7 +84,7 @@ class ActiveChatStateHolder(
         }
     }
 
-    fun onAction(action: ActiveChatAction) {
+    suspend fun onAction(action: ActiveChatAction) {
         if (isPersisting) return
 
         when (action) {
@@ -127,7 +127,7 @@ class ActiveChatStateHolder(
         }
     }
 
-    private fun sendLocalUserMessage() {
+    private suspend fun sendLocalUserMessage() {
         val content = state.draft.trim()
 
         // The state machine protects the same send invariant as the UI. FLOW-002 is text-only;
@@ -228,7 +228,7 @@ class ActiveChatStateHolder(
         )
     }
 
-    private fun confirmRewrite() {
+    private suspend fun confirmRewrite() {
         if (state.isGenerating) return
         val confirmation = state.editState as? MessageEditState.ConfirmRewrite ?: return
 

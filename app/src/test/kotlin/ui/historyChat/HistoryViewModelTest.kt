@@ -10,16 +10,17 @@ import org.junit.Test
 import test.fakes.FakeConversationRepository
 import test.fixtures.ConversationFixtures
 import ui.navigation.NavigationAction
+import kotlinx.coroutines.test.runTest
 
 class HistoryViewModelTest {
-    @Test fun emptyRepository_showsEmptyWithoutFailure() {
+    @Test fun emptyRepository_showsEmptyWithoutFailure() = runTest {
         val vm = HistoryViewModel(FakeConversationRepository())
         assertTrue(vm.uiState.value.groups.single().conversations.isEmpty())
         assertNull(vm.uiState.value.errorMessage)
         assertFalse(vm.uiState.value.isLoading)
     }
 
-    @Test fun populatedRepository_usesNewestFirstAndActiveLabel() {
+    @Test fun populatedRepository_usesNewestFirstAndActiveLabel() = runTest {
         val a = ConversationFixtures.conversation("A", "First question")
         val b = ConversationFixtures.conversation("B", "Second question")
         val repo = FakeConversationRepository(listOf(b, a), a.id)
@@ -29,7 +30,7 @@ class HistoryViewModelTest {
         assertEquals("Second question", summaries.first().title)
     }
 
-    @Test fun externalRepositoryUpdate_isProjectedAfterRefresh() {
+    @Test fun externalRepositoryUpdate_isProjectedAfterRefresh() = runTest {
         val repo = FakeConversationRepository()
         val vm = HistoryViewModel(repo)
         val a = repo.create()
@@ -39,7 +40,7 @@ class HistoryViewModelTest {
         assertEquals("Active", vm.uiState.value.groups.single().conversations.single().lastActivity)
     }
 
-    @Test fun openExisting_returnsNavigationEffect_withoutMutatingSelection() {
+    @Test fun openExisting_returnsNavigationEffect_withoutMutatingSelection() = runTest {
         val a = ConversationFixtures.conversation("A")
         val b = ConversationFixtures.conversation("B")
         val repo = FakeConversationRepository(listOf(a, b), b.id)
@@ -48,12 +49,12 @@ class HistoryViewModelTest {
         assertEquals(b.id, repo.activeId) // Navigator remains the activation owner.
     }
 
-    @Test fun openMissing_hasNoEffect() {
+    @Test fun openMissing_hasNoEffect() = runTest {
         val repo = FakeConversationRepository()
         assertNull(HistoryViewModel(repo).onAction(ChatHistoryAction.OpenConversation("missing")))
     }
 
-    @Test fun deleteInactive_removesOnlyTargetAndEmitsCleanup() {
+    @Test fun deleteInactive_removesOnlyTargetAndEmitsCleanup() = runTest {
         val a = ConversationFixtures.conversation("A", "A question")
         val b = ConversationFixtures.conversation("B", "B question")
         val repo = FakeConversationRepository(listOf(a, b), b.id)
@@ -66,7 +67,7 @@ class HistoryViewModelTest {
         assertEquals(listOf("B"), vm.uiState.value.groups.single().conversations.map { it.id })
     }
 
-    @Test fun deleteActive_clearsSelectionAndKeepsOtherConversation() {
+    @Test fun deleteActive_clearsSelectionAndKeepsOtherConversation() = runTest {
         val a = ConversationFixtures.conversation("A")
         val b = ConversationFixtures.conversation("B")
         val repo = FakeConversationRepository(listOf(a, b), a.id)
@@ -78,7 +79,7 @@ class HistoryViewModelTest {
         assertEquals("Saved", vm.uiState.value.groups.single().conversations.single().lastActivity)
     }
 
-    @Test fun invalidConversationIds_areRejectedWithoutThrowing() {
+    @Test fun invalidConversationIds_areRejectedWithoutThrowing() = runTest {
         val vm = HistoryViewModel(FakeConversationRepository())
         assertNull(vm.onAction(ChatHistoryAction.OpenConversation(" ")))
         assertEquals("Unable to open conversation.", vm.uiState.value.errorMessage)
@@ -86,14 +87,14 @@ class HistoryViewModelTest {
         assertEquals("Unable to delete conversation.", vm.uiState.value.errorMessage)
     }
 
-    @Test fun deleteMissing_doesNotCallRepositoryDelete() {
+    @Test fun deleteMissing_doesNotCallRepositoryDelete() = runTest {
         val repo = FakeConversationRepository()
         val vm = HistoryViewModel(repo)
         assertNull(confirmDelete(vm, "absent"))
         assertTrue(repo.deletedIds.isEmpty())
     }
 
-    @Test fun navigationActions_areMappedToRouterWithoutSideEffects() {
+    @Test fun navigationActions_areMappedToRouterWithoutSideEffects() = runTest {
         val repo = FakeConversationRepository()
         val vm = HistoryViewModel(repo)
         assertEquals(HistoryEffect.Navigate(NavigationAction.NewChat), vm.onAction(ChatHistoryAction.NewConversation))
@@ -103,7 +104,7 @@ class HistoryViewModelTest {
         assertTrue(repo.conversations.isEmpty())
     }
 
-    @Test fun refreshTracksExternalActivation() {
+    @Test fun refreshTracksExternalActivation() = runTest {
         val a = ConversationFixtures.conversation("A")
         val b = ConversationFixtures.conversation("B")
         val repo = FakeConversationRepository(listOf(a, b), a.id)
@@ -113,7 +114,7 @@ class HistoryViewModelTest {
         assertEquals(listOf("Saved", "Active"), vm.uiState.value.groups.single().conversations.map { it.lastActivity })
     }
 
-    @Test fun repositoryReadFailure_setsExplicitErrorState() {
+    @Test fun repositoryReadFailure_setsExplicitErrorState() = runTest {
         val failed = object : ConversationRepository by FakeConversationRepository() {
             override val conversations: List<domain.model.Conversation>
                 get() = error("Storage unavailable")
@@ -123,11 +124,11 @@ class HistoryViewModelTest {
         assertTrue(vm.uiState.value.groups.isEmpty())
     }
 
-    @Test fun deleteFailure_keepsConversationAndReportsError() {
+    @Test fun deleteFailure_keepsConversationAndReportsError() = runTest {
         val a = ConversationFixtures.conversation("A")
         val repository = FakeConversationRepository(listOf(a), a.id)
         val failed = object : ConversationRepository by repository {
-            override fun delete(id: ConversationId) { error("Delete failed") }
+            override suspend fun delete(id: ConversationId) { error("Delete failed") }
         }
         val vm = HistoryViewModel(failed)
         assertNull(confirmDelete(vm, "A"))
@@ -135,18 +136,18 @@ class HistoryViewModelTest {
         assertEquals(listOf(a), repository.conversations)
     }
 
-    @Test fun truncatesLongTitlesToFortyCharacters() {
+    @Test fun truncatesLongTitlesToFortyCharacters() = runTest {
         val a = ConversationFixtures.conversation("A", "x".repeat(50))
         val vm = HistoryViewModel(FakeConversationRepository(listOf(a)))
         assertEquals("x".repeat(40), vm.uiState.value.groups.single().conversations.single().title)
     }
 
-    private fun confirmDelete(vm: HistoryViewModel, conversationId: String): HistoryEffect? {
+    private suspend fun confirmDelete(vm: HistoryViewModel, conversationId: String): HistoryEffect? {
         assertNull(vm.onAction(ChatHistoryAction.RequestDeleteConversation(conversationId)))
         return vm.onAction(ChatHistoryAction.ConfirmDeleteConversation)
     }
 
-    @Test fun requestDelete_doesNotDeleteUntilConfirmed() {
+    @Test fun requestDelete_doesNotDeleteUntilConfirmed() = runTest {
         val a = ConversationFixtures.conversation("A", "Important conversation")
         val repo = FakeConversationRepository(listOf(a))
         val vm = HistoryViewModel(repo)
@@ -162,7 +163,7 @@ class HistoryViewModelTest {
         assertEquals(listOf(a.id), repo.deletedIds)
     }
 
-    @Test fun cancelDelete_preservesConversationAndClearsPrompt() {
+    @Test fun cancelDelete_preservesConversationAndClearsPrompt() = runTest {
         val a = ConversationFixtures.conversation("A")
         val repo = FakeConversationRepository(listOf(a))
         val vm = HistoryViewModel(repo)
@@ -173,7 +174,7 @@ class HistoryViewModelTest {
         assertTrue(repo.deletedIds.isEmpty())
     }
 
-    @Test fun refresh_keepsValidPromptButDropsExternallyDeletedConversation() {
+    @Test fun refresh_keepsValidPromptButDropsExternallyDeletedConversation() = runTest {
         val a = ConversationFixtures.conversation("A")
         val repo = FakeConversationRepository(listOf(a))
         val vm = HistoryViewModel(repo)
@@ -186,7 +187,7 @@ class HistoryViewModelTest {
         assertNull(vm.onAction(ChatHistoryAction.ConfirmDeleteConversation))
     }
 
-    @Test fun requestOfUnknownChatNeverDeletesExistingChat() {
+    @Test fun requestOfUnknownChatNeverDeletesExistingChat() = runTest {
         val a = ConversationFixtures.conversation("A")
         val repo = FakeConversationRepository(listOf(a))
         val vm = HistoryViewModel(repo)

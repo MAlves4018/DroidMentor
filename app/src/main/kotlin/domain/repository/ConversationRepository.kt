@@ -4,13 +4,23 @@ import domain.model.Conversation
 import domain.model.identity.ConversationId
 
 interface ConversationRepository {
+
     val conversations: List<Conversation>
     val activeId: ConversationId?
+
+    suspend fun initialize()
+
     fun find(id: ConversationId): Conversation?
-    fun create(): Conversation
-    fun activate(id: ConversationId): Boolean
-    fun save(conversation: Conversation)
-    fun delete(id: ConversationId)
-    fun leaveActive()
+
+    suspend fun create(): Conversation
+
+    suspend fun activate(id: ConversationId): Boolean
+
+    suspend fun save(conversation: Conversation)
+
+    suspend fun delete(id: ConversationId)
+
+    suspend fun leaveActive()
+
     fun resumableId(): ConversationId?
 }

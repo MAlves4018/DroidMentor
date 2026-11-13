@@ -1,14 +1,21 @@
 package platform.navigation
 
+import domain.repository.InMemoryConversationRepository
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
 import ui.navigation.NavigationAction
 
 class DroidMentorNavigatorTest {
 
+    private fun newNavigator(): DroidMentorNavigator =
+        DroidMentorNavigator(
+            repository = InMemoryConversationRepository()
+        )
+
     @Test
-    fun startsAtTitle() {
-        val navigator = DroidMentorNavigator()
+    fun startsAtTitle() = runTest {
+        val navigator = newNavigator()
 
         assertEquals(
             DroidMentorDestination.Title,
@@ -19,8 +26,8 @@ class DroidMentorNavigatorTest {
     }
 
     @Test
-    fun newChatCreatesUniqueConversationIds() {
-        val navigator = DroidMentorNavigator()
+    fun newChatCreatesUniqueConversationIds() = runTest {
+        val navigator = newNavigator()
 
         navigator.handle(NavigationAction.NewChat)
         val firstId = navigator.currentConversationId
@@ -34,8 +41,8 @@ class DroidMentorNavigatorTest {
     }
 
     @Test
-    fun openingHistoryKeepsCurrentChat() {
-        val navigator = DroidMentorNavigator()
+    fun openingHistoryKeepsCurrentChat() = runTest {
+        val navigator = newNavigator()
 
         navigator.handle(NavigationAction.NewChat)
         val originalDestination = navigator.currentDestination
@@ -50,8 +57,8 @@ class DroidMentorNavigatorTest {
     }
 
     @Test
-    fun backClosesHistoryBeforeLeavingChat() {
-        val navigator = DroidMentorNavigator()
+    fun backClosesHistoryBeforeLeavingChat() = runTest {
+        val navigator = newNavigator()
 
         navigator.handle(NavigationAction.NewChat)
         val chatDestination = navigator.currentDestination
@@ -67,8 +74,8 @@ class DroidMentorNavigatorTest {
     }
 
     @Test
-    fun secondBackReturnsToTitle() {
-        val navigator = DroidMentorNavigator()
+    fun secondBackReturnsToTitle() = runTest {
+        val navigator = newNavigator()
 
         navigator.handle(NavigationAction.NewChat)
         navigator.handle(NavigationAction.OpenHistory)
@@ -83,8 +90,8 @@ class DroidMentorNavigatorTest {
     }
 
     @Test
-    fun selectingCurrentConversationDoesNotDuplicateRoute() {
-        val navigator = DroidMentorNavigator()
+    fun selectingCurrentConversationDoesNotDuplicateRoute() = runTest {
+        val navigator = newNavigator()
 
         navigator.handle(NavigationAction.NewChat)
         val id = navigator.currentConversationId!!
@@ -106,10 +113,12 @@ class DroidMentorNavigatorTest {
     }
 
     @Test
-    fun selectingExistingConversationPreservesId() {
-        val navigator = DroidMentorNavigator()
+    fun selectingExistingConversationPreservesId() = runTest {
+        val navigator = newNavigator()
+
         navigator.handle(NavigationAction.NewChat)
         val id = navigator.currentConversationId!!
+
         navigator.handle(NavigationAction.OpenTitle)
         navigator.handle(NavigationAction.OpenConversation(id))
 
@@ -124,10 +133,12 @@ class DroidMentorNavigatorTest {
     }
 
     @Test
-    fun selectingPreviousConversationReusesRoute() {
-        val navigator = DroidMentorNavigator()
+    fun selectingPreviousConversationReusesRoute() = runTest {
+        val navigator = newNavigator()
+
         navigator.handle(NavigationAction.NewChat)
         val firstId = navigator.currentConversationId!!
+
         navigator.handle(NavigationAction.NewChat)
         navigator.handle(NavigationAction.OpenConversation(firstId))
 
@@ -142,8 +153,8 @@ class DroidMentorNavigatorTest {
     }
 
     @Test
-    fun titleClearsNavigationHistoryAndDrawer() {
-        val navigator = DroidMentorNavigator()
+    fun titleClearsNavigationHistoryAndDrawer() = runTest {
+        val navigator = newNavigator()
 
         navigator.handle(NavigationAction.NewChat)
         navigator.handle(NavigationAction.OpenHistory)
@@ -158,8 +169,8 @@ class DroidMentorNavigatorTest {
     }
 
     @Test
-    fun settingsAndAboutReturnToPreviousScreen() {
-        val navigator = DroidMentorNavigator()
+    fun settingsAndAboutReturnToPreviousScreen() = runTest {
+        val navigator = newNavigator()
 
         navigator.handle(NavigationAction.OpenSettings)
 
@@ -191,8 +202,8 @@ class DroidMentorNavigatorTest {
     }
 
     @Test
-    fun navigatingToSettingsClosesDrawer() {
-        val navigator = DroidMentorNavigator()
+    fun navigatingToSettingsClosesDrawer() = runTest {
+        val navigator = newNavigator()
 
         navigator.handle(NavigationAction.OpenHistory)
         navigator.handle(NavigationAction.OpenSettings)
@@ -205,8 +216,8 @@ class DroidMentorNavigatorTest {
     }
 
     @Test
-    fun backAtTitleDoesNothing() {
-        val navigator = DroidMentorNavigator()
+    fun backAtTitleDoesNothing() = runTest {
+        val navigator = newNavigator()
 
         navigator.back()
 

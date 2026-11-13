@@ -10,6 +10,8 @@ import domain.model.identity.ConversationId
 import domain.repository.ConversationRepository
 import kotlinx.coroutines.flow.collect
 import ui.navigation.NavigationAction
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 /** Compose host: adapts the current snapshot-backed repository to a testable ViewModel. */
 @Composable
@@ -31,11 +33,19 @@ fun HistoryNavigation(
             .collect { model.refresh() }
     }
 
+    val scope = rememberCoroutineScope()
+
     val dispatch: (ChatHistoryAction) -> Unit = { action ->
-        when (val effect = model.onAction(action)) {
-            is HistoryEffect.Navigate -> onNavigate(effect.action)
-            is HistoryEffect.ConversationDeleted -> onConversationDeleted(effect.id)
-            null -> Unit
+        scope.launch {
+            when (val effect = model.onAction(action)) {
+                is HistoryEffect.Navigate ->
+                    onNavigate(effect.action)
+
+                is HistoryEffect.ConversationDeleted ->
+                    onConversationDeleted(effect.id)
+
+                null -> Unit
+            }
         }
     }
 

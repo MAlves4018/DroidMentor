@@ -40,14 +40,22 @@ import ui.chat.ActiveChatUiState
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class PresentationIntegrationTest {
+
     @get:Rule val mainDispatcherRule = MainDispatcherRule()
-    private fun chat(repo: FakeConversationRepository, id: ConversationId, prefix: String): ActiveChatViewModel {
+
+    private fun chat(
+        repo: FakeConversationRepository,
+        id: ConversationId,
+        prefix: String
+    ): ActiveChatViewModel {
         var index = 0
         val settings = InMemorySettingsRepository()
         runBlocking { settings.saveApiKey("test-only-key") }
         val provider = object : MentorProvider {
-            override suspend fun generateReply(history: List<Message>, apiKey: String) =
-                "Test mentor reply"
+            override suspend fun generateReply(
+                history: List<Message>,
+                apiKey: String
+            ) = "Test mentor reply"
         }
         return ActiveChatViewModel(
             conversationId = id,
@@ -59,8 +67,8 @@ class PresentationIntegrationTest {
         )
     }
 
-
-    @Test fun titleNewChat_createsRepositoryConversationThroughNavigator() {
+    @Test
+    fun titleNewChat_createsRepositoryConversationThroughNavigator() = runTest {
         val repo = FakeConversationRepository()
         val navigator = DroidMentorNavigator(repository = repo)
         val effect = TitleViewModel().onAction(TitleAction.NewChatClicked)
@@ -70,7 +78,8 @@ class PresentationIntegrationTest {
         assertEquals(repo.activeId, navigator.currentConversationId)
     }
 
-    @Test fun sendAndEdit_projectIntoHistoryWithoutSecondStore() = runTest {
+    @Test
+    fun sendAndEdit_projectIntoHistoryWithoutSecondStore() = runTest {
         val repo = FakeConversationRepository()
         val id = repo.create().id
         val vm = chat(repo, id, "msg")
@@ -85,18 +94,28 @@ class PresentationIntegrationTest {
         assertEquals(2, repo.find(id)!!.messages.count { it.role == Role.MODEL })
 
         val history = HistoryViewModel(repo)
-        assertEquals("First question", history.uiState.value.groups.single().conversations.single().title)
+        assertEquals(
+            "First question",
+            history.uiState.value.groups.single().conversations.single().title
+        )
         val firstId = repo.find(id)!!.messages.first().id.value
         vm.onAction(ActiveChatAction.EditMessageClicked(firstId))
         vm.onAction(ActiveChatAction.EditDraftChanged("Revised first question"))
         vm.onAction(ActiveChatAction.SaveEditClicked)
         vm.onAction(ActiveChatAction.ConfirmRewriteClicked)
         history.refresh()
-        assertEquals(listOf("Revised first question"), repo.find(id)!!.messages.map { it.content })
-        assertEquals("Revised first question", history.uiState.value.groups.single().conversations.single().title)
+        assertEquals(
+            listOf("Revised first question"),
+            repo.find(id)!!.messages.map { it.content }
+        )
+        assertEquals(
+            "Revised first question",
+            history.uiState.value.groups.single().conversations.single().title
+        )
     }
 
-    @Test fun openingAFromHistory_keepsIndependentBData() {
+    @Test
+    fun openingAFromHistory_keepsIndependentBData() = runTest {
         val repo = FakeConversationRepository()
         val nav = DroidMentorNavigator(repository = repo)
         nav.handle(NavigationAction.NewChat)
@@ -111,7 +130,9 @@ class PresentationIntegrationTest {
             onAction(ActiveChatAction.DraftChanged("B question"))
             onAction(ActiveChatAction.SendClicked)
         }
-        val effect = HistoryViewModel(repo).onAction(ChatHistoryAction.OpenConversation(a.value))
+        val effect = HistoryViewModel(repo).onAction(
+            ChatHistoryAction.OpenConversation(a.value)
+        )
         assertTrue(effect is HistoryEffect.Navigate)
         nav.handle((effect as HistoryEffect.Navigate).action)
         assertEquals(a, nav.currentConversationId)
@@ -120,10 +141,11 @@ class PresentationIntegrationTest {
         assertEquals(2, repo.conversations.size)
     }
 
-    @Test fun deletingInactiveChat_preservesActiveChatAndEffects() {
+    @Test
+    fun deletingInactiveChat_preservesActiveChatAndEffects() = runTest {
         val repo = FakeConversationRepository()
         val a = repo.create().id
-                val b = repo.create().id
+        val b = repo.create().id
         val nav = DroidMentorNavigator(repository = repo)
         nav.handle(NavigationAction.OpenConversation(b))
         val history = HistoryViewModel(repo)
@@ -136,7 +158,8 @@ class PresentationIntegrationTest {
         assertEquals(b, nav.currentConversationId)
     }
 
-    @Test fun deletingActiveChat_doesNotResurrectItOnReopen() {
+    @Test
+    fun deletingActiveChat_doesNotResurrectItOnReopen() = runTest {
         val repo = FakeConversationRepository()
         val nav = DroidMentorNavigator(repository = repo)
         nav.handle(NavigationAction.NewChat)
@@ -154,17 +177,23 @@ class PresentationIntegrationTest {
         assertEquals(DroidMentorDestination.Title, nav.currentDestination)
     }
 
-    @Test fun historyRejectsMissingId_withoutCreatingPhantomConversation() {
+    @Test
+    fun historyRejectsMissingId_withoutCreatingPhantomConversation() = runTest {
         val repo = FakeConversationRepository()
         val nav = DroidMentorNavigator(repository = repo)
-        val effect = HistoryViewModel(repo).onAction(ChatHistoryAction.OpenConversation("missing"))
+        val effect = HistoryViewModel(repo).onAction(
+            ChatHistoryAction.OpenConversation("missing")
+        )
         assertNull(effect)
         assertEquals(0, repo.conversations.size)
-        nav.handle(NavigationAction.OpenConversation(ConversationId("missing")))
+        nav.handle(
+            NavigationAction.OpenConversation(ConversationId("missing"))
+        )
         assertEquals(DroidMentorDestination.Title, nav.currentDestination)
     }
 
-    @Test fun settingsDraftAndNavigation_doNotTouchConversations() = runTest {
+    @Test
+    fun settingsDraftAndNavigation_doNotTouchConversations() = runTest {
         val conversations = FakeConversationRepository()
         val settingsRepository = InMemorySettingsRepository()
         val settings = SettingsViewModel(settingsRepository)
@@ -182,7 +211,8 @@ class PresentationIntegrationTest {
         assertTrue(conversations.conversations.isEmpty())
     }
 
-    @Test fun titleSendRemainsExplicitlyOutOfScope() {
+    @Test
+    fun titleSendRemainsExplicitlyOutOfScope() = runTest {
         val repo = FakeConversationRepository()
         val title = TitleViewModel()
         title.onAction(TitleAction.DraftChanged("Not sent"))

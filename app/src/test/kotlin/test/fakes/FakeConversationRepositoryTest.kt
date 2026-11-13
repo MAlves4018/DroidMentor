@@ -7,9 +7,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import test.fixtures.ConversationFixtures
+import kotlinx.coroutines.test.runTest
 
 class FakeConversationRepositoryTest {
-    @Test fun create_isDeterministicAndNewestFirst() {
+    @Test fun create_isDeterministicAndNewestFirst() = runTest {
         val fake = FakeConversationRepository()
         val a = fake.create()
         val b = fake.create()
@@ -19,7 +20,7 @@ class FakeConversationRepositoryTest {
         assertEquals(b.id, fake.resumableId())
     }
 
-    @Test fun initialFixtures_areVisibleAndActivatable() {
+    @Test fun initialFixtures_areVisibleAndActivatable() = runTest {
         val a = ConversationFixtures.conversation("A", "First", "Second")
         val b = ConversationFixtures.conversation("B", "Other")
         val fake = FakeConversationRepository(listOf(a, b), a.id)
@@ -29,7 +30,7 @@ class FakeConversationRepositoryTest {
         assertEquals(b.id, fake.activeId)
     }
 
-    @Test fun updateAndDelete_produceInspectableCalls() {
+    @Test fun updateAndDelete_produceInspectableCalls() = runTest {
         val a = ConversationFixtures.conversation("A")
         val fake = FakeConversationRepository(listOf(a), a.id)
         val updated = ConversationFixtures.conversation("A", "Edited")
@@ -41,13 +42,13 @@ class FakeConversationRepositoryTest {
         assertNull(fake.resumableId())
     }
 
-    @Test fun nonexistentId_doesNotBecomeActive() {
+    @Test fun nonexistentId_doesNotBecomeActive() = runTest {
         val fake = FakeConversationRepository()
         assertFalse(fake.activate(ConversationId("missing")))
         assertNull(fake.activeId)
     }
 
-    @Test fun saveUnknown_isRejected() {
+    @Test fun saveUnknown_isRejected() = runTest {
         val fake = FakeConversationRepository()
         var rejected = false
         try {

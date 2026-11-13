@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import ui.historyChat.components.ConversationGroup
 import ui.navigation.NavigationAction
+import kotlinx.coroutines.CancellationException
 
 /** Owns History presentation behavior. The repository remains the only conversation store. */
 class HistoryViewModel(private val repository: ConversationRepository) : ViewModel() {
@@ -42,7 +43,7 @@ class HistoryViewModel(private val repository: ConversationRepository) : ViewMod
         }
     }
 
-    fun onAction(action: ChatHistoryAction): HistoryEffect? {
+    suspend fun onAction(action: ChatHistoryAction): HistoryEffect? {
         return when (action) {
             ChatHistoryAction.NewConversation ->
                 HistoryEffect.Navigate(NavigationAction.NewChat)
@@ -116,9 +117,13 @@ class HistoryViewModel(private val repository: ConversationRepository) : ViewMod
                         refresh()
                         HistoryEffect.ConversationDeleted(id)
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (_: Exception) {
-                    _uiState.value = _uiState.value.copy(errorMessage = "Unable to delete conversation.")
-                    null
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = "Unable to delete conversation."
+                )
+                null
                 }
             }
         }
