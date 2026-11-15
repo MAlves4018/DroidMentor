@@ -2,6 +2,7 @@ package ui.chat
 
 import data.InMemorySettingsRepository
 import domain.model.Role
+import domain.model.identity.ConversationId
 import domain.model.identity.MessageId
 import domain.provider.ProviderFailure
 import domain.usecase.SendMessageUseCase
@@ -23,14 +24,17 @@ import ui.chat.model.ChatRequestState
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActiveChatGeminiIntegrationTest {
+
     @get:Rule val dispatcherRule = MainDispatcherRule()
 
-    private class Fixture {
-        val repository = FakeConversationRepository()
-        val conversationId = repository.create().id
+    private class Fixture(
+        val repository: FakeConversationRepository,
+        val conversationId: ConversationId,
+    ) {
         val settings = InMemorySettingsRepository()
         val provider = ControlledMentorProvider()
         private var nextId = 0
+
         val viewModel = ActiveChatViewModel(
             conversationId = conversationId,
             repository = repository,
@@ -38,21 +42,32 @@ class ActiveChatGeminiIntegrationTest {
             sendMessageUseCase = SendMessageUseCase(provider, settings),
             newMessageId = { MessageId("message-${++nextId}") },
         )
+
         val messages get() = repository.find(conversationId)!!.messages
+
         fun typeAndSend(text: String) {
             viewModel.onAction(ActiveChatAction.DraftChanged(text))
             viewModel.onAction(ActiveChatAction.SendClicked)
         }
     }
 
-    @Test fun successfulSendCommitsOneUserThenOneModelAndRendersIt() = runTest {
-        val f = Fixture()
+    private suspend fun fixture(): Fixture {
+        val repository = FakeConversationRepository()
+        return Fixture(repository, repository.create().id)
+    }
+
+    @Test
+    fun successfulSendCommitsOneUserThenOneModelAndRendersIt() = runTest {
+        val f = fixture()
         f.settings.saveApiKey("dummy-key")
         runCurrent()
         f.typeAndSend("  What is StateFlow?  ")
         assertEquals(listOf(Role.USER), f.messages.map { it.role })
         assertEquals("What is StateFlow?", f.messages.single().content)
-        assertEquals(ChatRequestState.Generating, f.viewModel.uiState.value.requestState)
+        assertEquals(
+            ChatRequestState.Generating,
+            f.viewModel.uiState.value.requestState
+        )
         assertFalse(f.viewModel.uiState.value.canSend)
         runCurrent()
         assertEquals(1, f.provider.requests.size)
@@ -61,13 +76,20 @@ class ActiveChatGeminiIntegrationTest {
         f.provider.succeed(0, "  StateFlow holds state.  ")
         runCurrent()
         assertEquals(listOf(Role.USER, Role.MODEL), f.messages.map { it.role })
-        assertEquals("StateFlow holds state.", f.viewModel.uiState.value.messages.last().content)
-        assertEquals(ChatRequestState.Idle, f.viewModel.uiState.value.requestState)
+        assertEquals(
+            "StateFlow holds state.",
+            f.viewModel.uiState.value.messages.last().content
+        )
+        assertEquals(
+            ChatRequestState.Idle,
+            f.viewModel.uiState.value.requestState
+        )
         assertEquals(2, f.repository.savedIds.size)
     }
 
-    @Test fun duplicateSubmissionsWhilePendingDoNotCreateMessagesOrExtraRequests() = runTest {
-        val f = Fixture()
+    @Test
+    fun duplicateSubmissionsWhilePendingDoNotCreateMessagesOrExtraRequests() = runTest {
+        val f = fixture()
         f.settings.saveApiKey("dummy-key")
         runCurrent()
         f.typeAndSend("One")
@@ -81,8 +103,9 @@ class ActiveChatGeminiIntegrationTest {
         assertEquals(2, f.messages.size)
     }
 
-    @Test fun failureKeepsUserWithoutModelAndRetryDoesNotAppendUserAgain() = runTest {
-        val f = Fixture()
+    @Test
+    fun failureKeepsUserWithoutModelAndRetryDoesNotAppendUserAgain() = runTest {
+        val f = fixture()
         f.settings.saveApiKey("dummy-key")
         runCurrent()
         f.typeAndSend("Retry this")
@@ -90,20 +113,30 @@ class ActiveChatGeminiIntegrationTest {
         f.provider.fail(0, ProviderFailure.RateLimited("30"))
         runCurrent()
         assertEquals(1, f.messages.size)
-        assertEquals(ChatRequestState.Error(ChatErrorKind.RATE_LIMITED), f.viewModel.uiState.value.requestState)
+        assertEquals(
+            ChatRequestState.Error(ChatErrorKind.RATE_LIMITED),
+            f.viewModel.uiState.value.requestState
+        )
         f.viewModel.onAction(ActiveChatAction.RetryClicked)
         f.viewModel.onAction(ActiveChatAction.RetryClicked)
         runCurrent()
         assertEquals(1, f.messages.size)
         assertEquals(2, f.provider.requests.size)
-        assertEquals(f.provider.requests[0].history, f.provider.requests[1].history)
+        assertEquals(
+            f.provider.requests[0].history,
+            f.provider.requests[1].history
+        )
         f.provider.succeed(1, "Recovered")
         runCurrent()
-        assertEquals(listOf(Role.USER, Role.MODEL), f.messages.map { it.role })
+        assertEquals(
+            listOf(Role.USER, Role.MODEL),
+            f.messages.map { it.role }
+        )
     }
 
-    @Test fun stopCancelsAndLateCompletionDoesNotPublishModel() = runTest {
-        val f = Fixture()
+    @Test
+    fun stopCancelsAndLateCompletionDoesNotPublishModel() = runTest {
+        val f = fixture()
         f.settings.saveApiKey("dummy-key")
         runCurrent()
         f.typeAndSend("Cancel")
@@ -111,12 +144,16 @@ class ActiveChatGeminiIntegrationTest {
         f.viewModel.onAction(ActiveChatAction.StopClicked)
         f.provider.requests.single().result.complete("Too late")
         runCurrent()
-        assertEquals(ChatRequestState.Stopped, f.viewModel.uiState.value.requestState)
+        assertEquals(
+            ChatRequestState.Stopped,
+            f.viewModel.uiState.value.requestState
+        )
         assertEquals(listOf(Role.USER), f.messages.map { it.role })
     }
 
-    @Test fun missingKeyBlocksSendAndNeverContactsProvider() = runTest {
-        val f = Fixture()
+    @Test
+    fun missingKeyBlocksSendAndNeverContactsProvider() = runTest {
+        val f = fixture()
         runCurrent()
         f.typeAndSend("No key")
         runCurrent()
@@ -125,8 +162,9 @@ class ActiveChatGeminiIntegrationTest {
         assertTrue(f.provider.requests.isEmpty())
     }
 
-    @Test fun configuredStateFollowsSettingsChanges() = runTest {
-        val f = Fixture()
+    @Test
+    fun configuredStateFollowsSettingsChanges() = runTest {
+        val f = fixture()
         runCurrent()
         assertFalse(f.viewModel.uiState.value.providerConfigured)
         f.settings.saveApiKey("key")
@@ -137,7 +175,8 @@ class ActiveChatGeminiIntegrationTest {
         assertFalse(f.viewModel.uiState.value.providerConfigured)
     }
 
-    @Test fun mappedFailuresNeverInventAssistantTurns() = runTest {
+    @Test
+    fun mappedFailuresNeverInventAssistantTurns() = runTest {
         val cases = listOf(
             ProviderFailure.Offline to ChatErrorKind.OFFLINE,
             ProviderFailure.Authentication to ChatErrorKind.INVALID_API_KEY,
@@ -147,21 +186,26 @@ class ActiveChatGeminiIntegrationTest {
             ProviderFailure.Protocol() to ChatErrorKind.PROTOCOL,
             ProviderFailure.HttpError(400) to ChatErrorKind.GENERIC_PROVIDER_ERROR,
         )
+
         for ((failure, kind) in cases) {
-            val f = Fixture()
+            val f = fixture()
             f.settings.saveApiKey("dummy-key")
             runCurrent()
             f.typeAndSend("Explain")
             runCurrent()
             f.provider.fail(0, failure)
             runCurrent()
-            assertEquals(ChatRequestState.Error(kind), f.viewModel.uiState.value.requestState)
+            assertEquals(
+                ChatRequestState.Error(kind),
+                f.viewModel.uiState.value.requestState
+            )
             assertEquals(listOf(Role.USER), f.messages.map { it.role })
         }
     }
 
-    @Test fun deletingConversationDuringRequestCannotResurrectIt() = runTest {
-        val f = Fixture()
+    @Test
+    fun deletingConversationDuringRequestCannotResurrectIt() = runTest {
+        val f = fixture()
         f.settings.saveApiKey("dummy-key")
         runCurrent()
         f.typeAndSend("Will be deleted")
@@ -172,19 +216,22 @@ class ActiveChatGeminiIntegrationTest {
         assertNull(f.repository.find(f.conversationId))
     }
 
-    @Test fun responseStaysInOriginalConversationAfterAnotherChatOpens() = runTest {
+    @Test
+    fun responseStaysInOriginalConversationAfterAnotherChatOpens() = runTest {
         val repository = FakeConversationRepository()
         val first = repository.create().id
         val second = repository.create().id
         val settings = InMemorySettingsRepository()
         settings.saveApiKey("dummy")
         val provider = ControlledMentorProvider()
+
         val firstVm = ActiveChatViewModel(
             conversationId = first,
             repository = repository,
             settingsRepository = settings,
             sendMessageUseCase = SendMessageUseCase(provider, settings),
         )
+
         runCurrent()
         firstVm.onAction(ActiveChatAction.DraftChanged("In first"))
         firstVm.onAction(ActiveChatAction.SendClicked)

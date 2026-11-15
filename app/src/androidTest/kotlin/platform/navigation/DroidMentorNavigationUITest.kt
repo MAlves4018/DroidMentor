@@ -1,41 +1,40 @@
-
 package platform.navigation
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.test.espresso.Espresso
+import domain.model.Message
+import domain.model.Role
+import domain.model.identity.MessageId
+import isel.dei.pdm.droidmentor.DroidMentorApplication
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import ui.chat.ActiveChatTestTags
 import ui.historyChat.HistoryTestTags
 import ui.theme.DroidMentorTheme
 import ui.title.TitleTestTags
-import androidx.test.espresso.Espresso
-import isel.dei.pdm.droidmentor.DroidMentorApplication
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.assertCountEquals
-import domain.model.Message
-import domain.model.Role
-import domain.model.identity.MessageId
 
 class DroidMentorNavigationUiTest {
 
     @get:Rule
-    val composeRule =
-        createAndroidComposeRule<ComponentActivity>()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private fun launchApp() {
         val repository =
             (composeRule.activity.application as DroidMentorApplication)
                 .conversations
 
-        composeRule.runOnUiThread {
+        runBlocking {
+            repository.initialize()
             repository.conversations.toList().forEach {
                 repository.delete(it.id)
             }
@@ -68,7 +67,12 @@ class DroidMentorNavigationUiTest {
             .onNodeWithContentDescription("New chat")
             .performClick()
 
-        composeRule.waitForIdle()
+        // Wait for asynchronous Room navigation.
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithTag(
+                ActiveChatTestTags.EMPTY_CONTENT
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
 
         composeRule
             .onNodeWithTag(ActiveChatTestTags.EMPTY_CONTENT)
@@ -261,37 +265,66 @@ class DroidMentorNavigationUiTest {
     @Test
     fun activeChatDraftSurvivesSettingsAndBack() {
         startNewChat()
-        composeRule.onNodeWithTag(ActiveChatTestTags.COMPOSER_FIELD)
+
+        composeRule
+            .onNodeWithTag(ActiveChatTestTags.COMPOSER_FIELD)
             .performTextInput("Draft survives navigation")
 
         openHistory()
-        composeRule.onNodeWithTag(HistoryTestTags.SETTINGS_BUTTON).performClick()
-        composeRule.onNodeWithText("GENERAL").assertIsDisplayed()
 
-        pressBack()
-        composeRule.onNodeWithTag(ActiveChatTestTags.COMPOSER_FIELD)
+        composeRule
+            .onNodeWithTag(HistoryTestTags.SETTINGS_BUTTON)
+            .performClick()
+
+        composeRule
+            .onNodeWithText("GENERAL")
+            .assertIsDisplayed()
+
+        // Avoid system Back being consumed by the keyboard.
+        composeRule
+            .onNodeWithContentDescription("Back")
+            .performClick()
+
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithTag(
+                ActiveChatTestTags.COMPOSER_FIELD
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule
+            .onNodeWithTag(ActiveChatTestTags.COMPOSER_FIELD)
             .assertTextContains("Draft survives navigation")
     }
 
     @Test
     fun historyObservesRepositoryChanges() {
         startNewChat()
+
         val repository =
-            (composeRule.activity.application as DroidMentorApplication).conversations
+            (composeRule.activity.application as DroidMentorApplication)
+                .conversations
+
         val id = requireNotNull(repository.activeId)
         val original = requireNotNull(repository.find(id))
-        composeRule.runOnUiThread {
-            repository.save(original.append(
-                Message(
-                    id = MessageId("history-fixture"),
-                    role = Role.USER,
-                    content = "History observes live changes",
-                    sequence = original.nextSequence,
+
+        runBlocking {
+            repository.save(
+                original.append(
+                    Message(
+                        id = MessageId("history-fixture"),
+                        role = Role.USER,
+                        content = "History observes live changes",
+                        sequence = original.nextSequence,
+                    )
                 )
-            ))
+            )
         }
+
         openHistory()
-        composeRule.onNodeWithText("History observes live changes").assertIsDisplayed()
+
+        composeRule
+            .onNodeWithText("History observes live changes")
+            .assertIsDisplayed()
     }
 
     @Test

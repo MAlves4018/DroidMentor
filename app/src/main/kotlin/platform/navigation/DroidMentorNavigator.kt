@@ -6,13 +6,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import domain.model.identity.ConversationId
 import ui.navigation.NavigationAction
 import domain.repository.ConversationRepository
-import domain.repository.InMemoryConversationRepository
 
 @Stable
 class DroidMentorNavigator(
     initialBackStack: List<DroidMentorDestination> =
         listOf(DroidMentorDestination.Title),
-    private val repository: ConversationRepository = InMemoryConversationRepository()
+    private val repository: ConversationRepository
 ) {
     private val backStack =
         mutableStateListOf<DroidMentorDestination>().apply {
@@ -46,14 +45,14 @@ class DroidMentorNavigator(
         isHistoryOpen = false
     }
 
-    fun removeConversation(id: ConversationId) {
+    suspend fun removeConversation(id: ConversationId) {
         backStack.removeAll { it is DroidMentorDestination.ActiveChat && it.conversationId == id }
         if (backStack.isEmpty()) backStack.add(DroidMentorDestination.Title)
         synchronizeActiveConversation()
     }
 
     /** Keep repository selection aligned with the surviving navigation stack. */
-    private fun synchronizeActiveConversation() {
+    suspend fun synchronizeActiveConversation() {
         val survivingChat = backStack.asReversed()
             .filterIsInstance<DroidMentorDestination.ActiveChat>()
             .firstOrNull { repository.find(it.conversationId) != null }
@@ -64,7 +63,7 @@ class DroidMentorNavigator(
         }
     }
 
-    fun back() {
+    suspend fun back() {
         if (isHistoryOpen) {
             closeHistory()
         } else if (backStack.size > 1) {
@@ -73,7 +72,7 @@ class DroidMentorNavigator(
         }
     }
 
-    fun handle(action: NavigationAction) {
+    suspend fun handle(action: NavigationAction) {
         when (action) {
             NavigationAction.NewChat -> {
                 closeHistory()
@@ -166,7 +165,7 @@ class DroidMentorNavigator(
                             listOf(DroidMentorDestination.Title)
                         },
                         repository = repository,
-                    ).also { it.synchronizeActiveConversation() }
+                    )
                 },
             )
     }

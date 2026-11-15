@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import androidx.compose.runtime.saveable.SaverScope
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import test.fakes.FakeConversationRepository
 import ui.navigation.NavigationAction
@@ -22,7 +23,7 @@ class DroidMentorNavigatorRestorationTest {
         with(testScope) { save(navigator)!! }
     }
 
-    @Test fun restoresSettingsAboveChatAndReturnsToSameChatOnBack() {
+    @Test fun restoresSettingsAboveChatAndReturnsToSameChatOnBack() = runTest {
         val repository = FakeConversationRepository()
         val before = DroidMentorNavigator(repository = repository)
         before.handle(NavigationAction.NewChat)
@@ -37,7 +38,7 @@ class DroidMentorNavigatorRestorationTest {
         assertEquals(id, repository.activeId)
     }
 
-    @Test fun restoredNavigatorCreatesChatInOriginalRepository() {
+    @Test fun restoredNavigatorCreatesChatInOriginalRepository() = runTest {
         val repository = FakeConversationRepository()
         val before = DroidMentorNavigator(repository = repository)
         val saver = DroidMentorNavigator.saver(repository)
@@ -47,7 +48,7 @@ class DroidMentorNavigatorRestorationTest {
         assertEquals(1, repository.conversations.size)
     }
 
-    @Test fun ignoresChatDeletedAfterSavingRoutes() {
+    @Test fun ignoresChatDeletedAfterSavingRoutes() = runTest {
         val repository = FakeConversationRepository()
         val before = DroidMentorNavigator(repository = repository)
         before.handle(NavigationAction.NewChat)
@@ -62,7 +63,7 @@ class DroidMentorNavigatorRestorationTest {
         assertNull(after.currentConversationId)
     }
 
-    @Test fun skipsInvalidAndMissingRoutesDuringRestore() {
+    @Test fun skipsInvalidAndMissingRoutesDuringRestore() = runTest {
         val repository = FakeConversationRepository()
         val saver = DroidMentorNavigator.saver(repository)
         val after = saver.restore(arrayListOf("bad", "chat:missing", "title", "settings"))!!
@@ -71,7 +72,7 @@ class DroidMentorNavigatorRestorationTest {
         assertEquals(DroidMentorDestination.Title, after.currentDestination)
     }
 
-    @Test fun fallsBackToTitleWhenAllSavedRoutesAreInvalid() {
+    @Test fun fallsBackToTitleWhenAllSavedRoutesAreInvalid() = runTest {
         val repository = FakeConversationRepository()
         val saver = DroidMentorNavigator.saver(repository)
         val after = saver.restore(arrayListOf("bad", "chat:missing", "chat:", "chat:   "))!!
@@ -79,7 +80,7 @@ class DroidMentorNavigatorRestorationTest {
         assertFalse(after.canGoBack)
     }
 
-    @Test fun retainedConversationMayBeReopenedAfterRestoration() {
+    @Test fun retainedConversationMayBeReopenedAfterRestoration() = runTest {
         val repository = FakeConversationRepository()
         val before = DroidMentorNavigator(repository = repository)
         before.handle(NavigationAction.NewChat)
@@ -91,7 +92,8 @@ class DroidMentorNavigatorRestorationTest {
         assertEquals(id, after.currentConversationId)
         assertTrue(after.canGoBack)
     }
-    @Test fun deletedForegroundChatOnRestore_reselectsPreviousSurvivingChat() {
+
+    @Test fun deletedForegroundChatOnRestore_reselectsPreviousSurvivingChat() = runTest {
         val repository = FakeConversationRepository()
         val before = DroidMentorNavigator(repository = repository)
         before.handle(NavigationAction.NewChat)
@@ -102,6 +104,9 @@ class DroidMentorNavigatorRestorationTest {
 
         repository.delete(b)
         val after = DroidMentorNavigator.saver(repository).restore(routes)!!
+
+        after.synchronizeActiveConversation()
+
         assertEquals(DroidMentorDestination.ActiveChat(a), after.currentDestination)
         assertEquals(a, repository.activeId)
         assertEquals(a, repository.resumableId())

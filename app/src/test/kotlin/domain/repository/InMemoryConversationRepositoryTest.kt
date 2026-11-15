@@ -7,6 +7,7 @@ import domain.model.identity.ConversationId
 import domain.model.identity.MessageId
 import org.junit.Assert.*
 import org.junit.Test
+import kotlinx.coroutines.test.runTest
 
 class InMemoryConversationRepositoryTest {
     private fun message(text: String, sequence: Long = 0) = Message(
@@ -20,7 +21,7 @@ class InMemoryConversationRepositoryTest {
         assertNull(repo.resumableId())
     }
 
-    @Test fun createAddsUniqueConversationsNewestFirstAndActivatesNewest() {
+    @Test fun createAddsUniqueConversationsNewestFirstAndActivatesNewest() = runTest {
         val repo = InMemoryConversationRepository()
         val first = repo.create()
         val second = repo.create()
@@ -30,7 +31,7 @@ class InMemoryConversationRepositoryTest {
         assertEquals(second.id, repo.resumableId())
     }
 
-    @Test fun selectingHistoryConversationMakesItActiveWithoutDuplicatingIt() {
+    @Test fun selectingHistoryConversationMakesItActiveWithoutDuplicatingIt() = runTest {
         val repo = InMemoryConversationRepository()
         val first = repo.create()
         repo.create()
@@ -40,7 +41,7 @@ class InMemoryConversationRepositoryTest {
         assertEquals(first, repo.find(first.id))
     }
 
-    @Test fun unknownConversationCannotBeActivated() {
+    @Test fun unknownConversationCannotBeActivated() = runTest {
         val repo = InMemoryConversationRepository()
         val existing = repo.create()
         assertFalse(repo.activate(ConversationId("missing")))
@@ -48,7 +49,7 @@ class InMemoryConversationRepositoryTest {
         assertNull(repo.find(ConversationId("missing")))
     }
 
-    @Test fun saveUpdatesConversationWithoutChangingItsIdentity() {
+    @Test fun saveUpdatesConversationWithoutChangingItsIdentity() = runTest {
         val repo = InMemoryConversationRepository()
         val first = repo.create()
         val second = repo.create()
@@ -59,7 +60,7 @@ class InMemoryConversationRepositoryTest {
         assertEquals(second.id, repo.activeId)
     }
 
-    @Test fun savingUnknownConversationFailsWithoutCreatingIt() {
+    @Test fun savingUnknownConversationFailsWithoutCreatingIt() = runTest {
         val repo = InMemoryConversationRepository()
         try {
             repo.save(Conversation(ConversationId("unknown")))
@@ -68,7 +69,7 @@ class InMemoryConversationRepositoryTest {
         assertTrue(repo.conversations.isEmpty())
     }
 
-    @Test fun deleteInactivePreservesActiveAndOtherConversations() {
+    @Test fun deleteInactivePreservesActiveAndOtherConversations() = runTest {
         val repo = InMemoryConversationRepository()
         val first = repo.create()
         val second = repo.create()
@@ -77,7 +78,7 @@ class InMemoryConversationRepositoryTest {
         assertEquals(second.id, repo.resumableId())
     }
 
-    @Test fun deleteActiveClearsSelectionWithoutSelectingAnother() {
+    @Test fun deleteActiveClearsSelectionWithoutSelectingAnother() = runTest {
         val repo = InMemoryConversationRepository()
         val first = repo.create()
         val second = repo.create()
@@ -88,7 +89,7 @@ class InMemoryConversationRepositoryTest {
         assertFalse(repo.activate(second.id))
     }
 
-    @Test fun deletingUnknownConversationIsNoOp() {
+    @Test fun deletingUnknownConversationIsNoOp() = runTest {
         val repo = InMemoryConversationRepository()
         val first = repo.create()
         repo.delete(ConversationId("missing"))
@@ -96,7 +97,7 @@ class InMemoryConversationRepositoryTest {
         assertEquals(first.id, repo.activeId)
     }
 
-    @Test fun leaveActiveKeepsHistoryButDisablesResume() {
+    @Test fun leaveActiveKeepsHistoryButDisablesResume() = runTest {
         val repo = InMemoryConversationRepository()
         val first = repo.create()
         repo.leaveActive()
@@ -107,7 +108,7 @@ class InMemoryConversationRepositoryTest {
         assertEquals(first.id, repo.resumableId())
     }
 
-    @Test fun newRepositoryInstanceDoesNotPersistData() {
+    @Test fun newRepositoryInstanceDoesNotPersistData() = runTest {
         val original = InMemoryConversationRepository()
         original.create()
         val restarted = InMemoryConversationRepository()

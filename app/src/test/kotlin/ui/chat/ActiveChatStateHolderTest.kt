@@ -5,6 +5,7 @@ import domain.model.Message
 import domain.model.Role
 import domain.model.identity.ConversationId
 import domain.model.identity.MessageId
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -14,7 +15,7 @@ import ui.chat.model.MessageEditState
 class ActiveChatStateHolderTest {
 
     @Test
-    fun draftChanged_updatesUiStateWithoutChangingConversation() {
+    fun draftChanged_updatesUiStateWithoutChangingConversation() = runTest {
         val holder = holder()
 
         holder.onAction(ActiveChatAction.DraftChanged("Hello"))
@@ -24,7 +25,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun blankSend_isRejected() {
+    fun blankSend_isRejected() = runTest {
         val holder = holder()
 
         holder.onAction(ActiveChatAction.DraftChanged("   "))
@@ -35,7 +36,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun validSend_insertsOneUserMessageWithStableIdentityAndClearsDraft() {
+    fun validSend_insertsOneUserMessageWithStableIdentityAndClearsDraft() = runTest {
         val holder = holder(ids = listOf("u-generated"))
 
         holder.onAction(
@@ -56,7 +57,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun repeatedSend_doesNotDuplicateThePreviouslySubmittedDraft() {
+    fun repeatedSend_doesNotDuplicateThePreviouslySubmittedDraft() = runTest {
         val holder = holder(ids = listOf("u1", "u2"))
 
         holder.onAction(ActiveChatAction.DraftChanged("Only once"))
@@ -68,7 +69,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun unavailableChat_rejectsSendEvenWhenActionIsDispatchedDirectly() {
+    fun unavailableChat_rejectsSendEvenWhenActionIsDispatchedDirectly() = runTest {
         val holder = ActiveChatStateHolder(
             conversationId = ConversationId("c1"),
             initialUiState = ActiveChatUiState(
@@ -85,7 +86,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun editActionFlow_rewritesSelectedUserMessageAndDropsFollowingSuffix() {
+    fun editActionFlow_rewritesSelectedUserMessageAndDropsFollowingSuffix() = runTest {
         val initial = Conversation(ConversationId("c1"))
             .append(message("u1", Role.USER, "First question", 0))
             .append(message("m1", Role.MODEL, "First answer", 1))
@@ -125,7 +126,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun staleOrModelEditAction_isIgnored() {
+    fun staleOrModelEditAction_isIgnored() = runTest {
         val initial = Conversation(ConversationId("c1")).append(
             message("m1", Role.MODEL, "Model response", 0)
         )
@@ -143,7 +144,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun sendDuringEdit_isRejected() {
+    fun sendDuringEdit_isRejected() = runTest {
         val conversation = Conversation(
             id = ConversationId("c1"),
         ).append(
@@ -175,7 +176,7 @@ class ActiveChatStateHolderTest {
 
 
     @Test
-    fun failedSaveOnSend_doesNotAdvanceConversationOrClearDraft_andCanRetry() {
+    fun failedSaveOnSend_doesNotAdvanceConversationOrClearDraft_andCanRetry() = runTest {
         var fail = true
         val initial = Conversation(ConversationId("c1"))
         val persisted = mutableListOf<Conversation>()
@@ -206,7 +207,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun failedSaveOnRewrite_preservesFullSuffixAndConfirmation_forRetry() {
+    fun failedSaveOnRewrite_preservesFullSuffixAndConfirmation_forRetry() = runTest {
         val initial = Conversation(ConversationId("c1"))
             .append(message("u1", Role.USER, "Original", 0))
             .append(message("m1", Role.MODEL, "Answer", 1))
@@ -240,7 +241,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun synchronousSaveCallback_cannotReenterSendAndCreateDuplicateMessage() {
+    fun synchronousSaveCallback_cannotReenterSendAndCreateDuplicateMessage() = runTest {
         val initial = Conversation(ConversationId("c1"))
         var callbackCalls = 0
         lateinit var holder: ActiveChatStateHolder
@@ -263,7 +264,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun synchronousSaveCallback_cannotReenterRewriteAndCommitTwice() {
+    fun synchronousSaveCallback_cannotReenterRewriteAndCommitTwice() = runTest {
         val initial = Conversation(ConversationId("c1"))
             .append(message("u1", Role.USER, "Original", 0))
             .append(message("m1", Role.MODEL, "Response", 1))
@@ -289,7 +290,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun failedSave_releasesReentrancyGuardSoLaterRetryWorks() {
+    fun failedSave_releasesReentrancyGuardSoLaterRetryWorks() = runTest {
         val initial = Conversation(ConversationId("c1"))
         var callbacks = 0
         val holder = ActiveChatStateHolder(
@@ -310,7 +311,7 @@ class ActiveChatStateHolderTest {
     }
 
     @Test
-    fun confirmRewrite_duringGenerationIsIgnoredEvenIfConfirmationWasAlreadyOpen() {
+    fun confirmRewrite_duringGenerationIsIgnoredEvenIfConfirmationWasAlreadyOpen() = runTest {
         val initial = Conversation(ConversationId("c1"))
             .append(message("u1", Role.USER, "Original", 0))
             .append(message("m1", Role.MODEL, "Reply", 1))

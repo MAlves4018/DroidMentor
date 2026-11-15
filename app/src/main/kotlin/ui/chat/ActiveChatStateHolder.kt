@@ -20,7 +20,7 @@ class ActiveChatStateHolder(
     val conversationId: ConversationId,
     initialConversation: Conversation = Conversation(conversationId),
     initialUiState: ActiveChatUiState = ActiveChatUiState(),
-    private val onConversationChanged: (Conversation) -> Unit = {},
+    private val onConversationChanged: suspend (Conversation) -> Unit = {},
     private val newMessageId: () -> MessageId = {
         MessageId(UUID.randomUUID().toString())
     },
@@ -33,10 +33,10 @@ class ActiveChatStateHolder(
 
     private var conversation: Conversation = initialConversation
 
-    // Repository saves are synchronous at this boundary. A save may notify observers
-    // immediately; never let an observer re-enter the same state machine before the
-    // conversation and draft/edit state have been published.
+    // A suspend save serializes conversation mutations, while draft input remains
+    // responsive. Publishing the saved snapshot must preserve newer draft text.
     private var isPersisting = false
+    private var draftRevision = 0L
 
     private val mutableUiState = MutableStateFlow(
         initialUiState.copy(messages = initialConversation.toChatMessagesUi())
@@ -61,7 +61,7 @@ class ActiveChatStateHolder(
     }
 
     /** Commit exactly one MODEL message after a successful provider response. */
-    fun appendModelReply(text: String): Boolean {
+    suspend fun appendModelReply(text: String): Boolean {
         val content = text.trim()
         if (isPersisting || state.requestState !is ChatRequestState.Generating || content.isEmpty()) {
             return false
@@ -84,11 +84,12 @@ class ActiveChatStateHolder(
         }
     }
 
-    fun onAction(action: ActiveChatAction) {
-        if (isPersisting) return
+    suspend fun onAction(action: ActiveChatAction) {
+        if (isPersisting && action !is ActiveChatAction.DraftChanged) return
 
         when (action) {
             is ActiveChatAction.DraftChanged -> {
+                draftRevision++
                 state = state.copy(draft = action.value)
             }
 
@@ -127,8 +128,10 @@ class ActiveChatStateHolder(
         }
     }
 
-    private fun sendLocalUserMessage() {
-        val content = state.draft.trim()
+    private suspend fun sendLocalUserMessage() {
+        val submittedDraft = state.draft
+        val submittedRevision = draftRevision
+        val content = submittedDraft.trim()
 
         // The state machine protects the same send invariant as the UI. FLOW-002 is text-only;
         // attachment effects are introduced by a later task.
@@ -152,7 +155,7 @@ class ActiveChatStateHolder(
             conversation = updated
             state = state.copy(
                 messages = updated.toChatMessagesUi(),
-                draft = "",
+                draft = if (draftRevision == submittedRevision) "" else state.draft,
             )
         } finally {
             isPersisting = false
@@ -228,7 +231,7 @@ class ActiveChatStateHolder(
         )
     }
 
-    private fun confirmRewrite() {
+    private suspend fun confirmRewrite() {
         if (state.isGenerating) return
         val confirmation = state.editState as? MessageEditState.ConfirmRewrite ?: return
 

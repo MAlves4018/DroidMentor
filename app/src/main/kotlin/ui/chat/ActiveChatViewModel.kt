@@ -3,6 +3,7 @@ package ui.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import domain.model.Role
+import domain.model.Conversation
 import domain.model.identity.ConversationId
 import domain.model.identity.MessageId
 import domain.provider.ProviderFailure
@@ -19,6 +20,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import ui.chat.model.ChatErrorKind
 import ui.chat.model.ChatRequestState
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 /** Owns one conversation's request lifecycle; Compose remains a pure state renderer. */
 class ActiveChatViewModel(
@@ -35,15 +39,31 @@ class ActiveChatViewModel(
             "Cannot open unknown or deleted conversation: ${conversationId.value}"
         },
         initialUiState = initialUiState,
-        onConversationChanged = repository::save,
+        onConversationChanged = ::persistConversation,
         newMessageId = newMessageId,
     )
 
     val uiState: StateFlow<ActiveChatUiState> = stateHolder.uiState
 
     private var requestJob: Job? = null
+    private var saveJob: Job? = null
     private var requestVersion = 0L
     private var pendingUserId: MessageId? = null
+
+    /** Cancellation can arrive after SQLite committed but before cache publication.
+     * Re-read durable truth before reporting failure. Only an exact accepted snapshot
+     * may continue to the synchronous StateHolder publication; rollback/delete still cancel. */
+    private suspend fun persistConversation(updated: Conversation) {
+        try {
+            repository.save(updated)
+        } catch (cancelled: CancellationException) {
+            val accepted = withContext(NonCancellable) {
+                repository.initialize()
+                repository.find(conversationId) == updated
+            }
+            if (!accepted) throw cancelled
+        }
+    }
 
     init {
         viewModelScope.launch {
@@ -58,30 +78,89 @@ class ActiveChatViewModel(
             ActiveChatAction.SendClicked -> send()
             ActiveChatAction.RetryClicked -> retry()
             ActiveChatAction.StopClicked -> stop()
+
             ActiveChatAction.ConfirmRewriteClicked -> {
-                val before = stateHolder.currentConversation
-                stateHolder.onAction(action)
-                if (before != stateHolder.currentConversation) pendingUserId = null
+                viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                    val before = stateHolder.currentConversation
+
+                    try {
+                        stateHolder.onAction(action)
+
+                        if (before != stateHolder.currentConversation) {
+                            pendingUserId = null
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        // Persistence failed; the original conversation remains.
+                        stateHolder.setRequestState(
+                            ChatRequestState.Error(ChatErrorKind.GENERIC_PROVIDER_ERROR)
+                        )
+                    }
+                }
             }
-            else -> stateHolder.onAction(action)
+
+            else -> {
+                viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                    stateHolder.onAction(action)
+                }
+            }
         }
     }
 
     private fun send() {
-        if (requestJob?.isActive == true || !uiState.value.canSend) return
-        val previousLastId = stateHolder.currentConversation.messages.lastOrNull()?.id
-        // This is the ONLY insertion of the USER message.
-        stateHolder.onAction(ActiveChatAction.SendClicked)
-        val last = stateHolder.currentConversation.messages.lastOrNull() ?: return
-        if (last.id == previousLastId || last.role != Role.USER) return
-        pendingUserId = last.id
-        requestReply(last.id)
+        if (
+            saveJob?.isActive == true ||
+            requestJob?.isCompleted == false ||
+            !uiState.value.canSend
+        ) return
+
+        saveJob = viewModelScope.launch(
+            start = CoroutineStart.UNDISPATCHED
+        ) {
+            try {
+                val previousLastId =
+                    stateHolder.currentConversation.messages.lastOrNull()?.id
+
+                // Persist the USER message before requesting Gemini.
+                stateHolder.onAction(ActiveChatAction.SendClicked)
+
+                val last =
+                    stateHolder.currentConversation.messages.lastOrNull()
+                        ?: return@launch
+
+                if (
+                    last.id == previousLastId ||
+                    last.role != Role.USER
+                ) return@launch
+
+                pendingUserId = last.id
+
+                // Only runs after Room successfully saves the message.
+                requestReply(last.id)
+
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // The draft is preserved if persistence fails.
+                stateHolder.setRequestState(
+                    ChatRequestState.Error(ChatErrorKind.GENERIC_PROVIDER_ERROR)
+                )
+            }
+        }
     }
 
     private fun retry() {
-        if (requestJob?.isActive == true) return
-        if (uiState.value.requestState !is ChatRequestState.Error &&
-            uiState.value.requestState !is ChatRequestState.Stopped) return
+        if (
+            saveJob?.isActive == true ||
+            requestJob?.isCompleted == false
+        ) return
+
+        if (
+            uiState.value.requestState !is ChatRequestState.Error &&
+            uiState.value.requestState !is ChatRequestState.Stopped
+        ) return
+
         val id = pendingUserId ?: return
         requestReply(id)
     }
@@ -90,13 +169,13 @@ class ActiveChatViewModel(
         val job = requestJob ?: return
         if (!job.isActive) return
         requestVersion++
-        requestJob = null
         job.cancel()
         stateHolder.setRequestState(ChatRequestState.Stopped)
     }
 
     private fun requestReply(userId: MessageId) {
-        if (requestJob?.isActive == true) return
+        // A cancelled job may still be reconciling a committed write.
+        if (!viewModelScope.isActive || requestJob?.isCompleted == false) return
         val history = stateHolder.currentConversation.messages.toList()
         if (history.lastOrNull()?.id != userId || history.lastOrNull()?.role != Role.USER) return
         if (repository.find(conversationId) == null) return

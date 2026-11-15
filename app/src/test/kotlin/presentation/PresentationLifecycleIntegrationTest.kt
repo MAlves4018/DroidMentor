@@ -6,6 +6,7 @@ import domain.model.identity.MessageId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import platform.navigation.ChatViewModelScopes
 import test.fakes.FakeConversationRepository
@@ -23,7 +24,9 @@ import test.MainDispatcherRule
 
 /** Exercises the exact History Delete -> parent route/scope cleanup seam. */
 class PresentationLifecycleIntegrationTest {
+
     @get:Rule val mainDispatcherRule = MainDispatcherRule()
+
     private fun model(
         scopes: ChatViewModelScopes,
         repo: FakeConversationRepository,
@@ -31,14 +34,18 @@ class PresentationLifecycleIntegrationTest {
     ): ActiveChatViewModel {
         val settings = InMemorySettingsRepository()
         val provider = object : MentorProvider {
-            override suspend fun generateReply(history: List<Message>, apiKey: String) =
-                "Test mentor reply"
+            override suspend fun generateReply(
+                history: List<Message>,
+                apiKey: String
+            ) = "Test mentor reply"
         }
         return ViewModelProvider(
             scopes.ownerFor(id),
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
-                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                override fun <T : androidx.lifecycle.ViewModel> create(
+                    modelClass: Class<T>
+                ): T =
                     ActiveChatViewModel(
                         conversationId = id,
                         repository = repo,
@@ -50,7 +57,8 @@ class PresentationLifecycleIntegrationTest {
         )[ActiveChatViewModel::class.java]
     }
 
-    @Test fun deletingA_releasesItsModelWithoutLosingBDraft() {
+    @Test
+    fun deletingA_releasesItsModelWithoutLosingBDraft() = runTest {
         val repo = FakeConversationRepository()
         val a = repo.create().id
         val b = repo.create().id
@@ -67,15 +75,21 @@ class PresentationLifecycleIntegrationTest {
         scopes.release((effect as HistoryEffect.ConversationDeleted).id)
         assertFalse(scopes.isTracked(a))
         assertTrue(scopes.isTracked(b))
-        assertEquals("Draft B", model(scopes, repo, b).uiState.value.draft)
+        assertEquals(
+            "Draft B",
+            model(scopes, repo, b).uiState.value.draft
+        )
     }
 
-    @Test fun deleteA_thenCreateAnotherChat_neverReusesOldOwner() {
+    @Test
+    fun deleteA_thenCreateAnotherChat_neverReusesOldOwner() = runTest {
         val repo = FakeConversationRepository()
         val a = repo.create().id
         val scopes = ChatViewModelScopes()
         val ownerA = scopes.ownerFor(a)
-        model(scopes, repo, a).onAction(ActiveChatAction.DraftChanged("Obsolete draft"))
+        model(scopes, repo, a).onAction(
+            ActiveChatAction.DraftChanged("Obsolete draft")
+        )
 
         val history = HistoryViewModel(repo)
         history.onAction(ChatHistoryAction.RequestDeleteConversation(a.value))
@@ -84,7 +98,10 @@ class PresentationLifecycleIntegrationTest {
         val c = repo.create().id
         val ownerC = scopes.ownerFor(c)
         assertFalse(ownerA === ownerC)
-        assertEquals("", model(scopes, repo, c).uiState.value.draft)
+        assertEquals(
+            "",
+            model(scopes, repo, c).uiState.value.draft
+        )
         assertEquals(1, repo.conversations.size)
     }
 }

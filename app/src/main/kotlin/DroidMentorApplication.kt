@@ -7,7 +7,9 @@ import data.remote.gemini.GeminiMentorProvider
 import data.settings.DataStoreSettingsRepository
 import domain.provider.MentorProvider
 import domain.repository.ConversationRepository
-import domain.repository.InMemoryConversationRepository
+import androidx.room.Room
+import data.local.room.DroidMentorDatabase
+import data.repository.RoomConversationRepository
 import domain.repository.SettingsRepository
 import platform.connectivity.AndroidConnectivityChecker
 import platform.connectivity.ConnectivityChecker
@@ -16,8 +18,16 @@ import java.io.File
 /** Application-level service locator. */
 class DroidMentorApplication : Application() {
 
+    private val database: DroidMentorDatabase by lazy {
+        Room.databaseBuilder(
+            applicationContext,
+            DroidMentorDatabase::class.java,
+            DroidMentorDatabase.DATABASE_NAME
+        ).build()
+    }
+
     val conversations: ConversationRepository by lazy {
-        InMemoryConversationRepository()
+        RoomConversationRepository(database)
     }
 
     // Single DataStore per file. noBackupFilesDir excludes the key from Android backups.
