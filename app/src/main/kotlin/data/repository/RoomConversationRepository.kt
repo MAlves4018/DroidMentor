@@ -20,6 +20,11 @@ class RoomConversationRepository(
     private val database: DroidMentorDatabase
 ) : ConversationRepository {
 
+    private companion object {
+        // Legacy Android SQLite permits 999 bind parameters, including conversationId.
+        const val MAX_MESSAGE_IDS_PER_QUERY = 998
+    }
+
     private val conversationDao = database.conversationDao()
     private val messageDao = database.messageDao()
 
@@ -103,7 +108,17 @@ class RoomConversationRepository(
                         it.id.value
                     }
 
-                    if (messageIds.isEmpty()) {
+                    messageIds.chunked(MAX_MESSAGE_IDS_PER_QUERY).forEach { ids ->
+                        require(messageDao.countOwnedByOtherConversation(
+                            conversation.id.value,
+                            ids
+                        ) == 0) { "Message ID belongs to another conversation" }
+                    }
+
+                    // NOT IN cannot be split into independent deletes: each batch
+                    // would erase IDs retained by another. Replace large snapshots
+                    // atomically, retaining timestamps from existingMessages below.
+                    if (messageIds.isEmpty() || messageIds.size > MAX_MESSAGE_IDS_PER_QUERY) {
                         messageDao.deleteAfterSequence(
                             conversation.id.value,
                             -1L

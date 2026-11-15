@@ -62,15 +62,19 @@ fun DroidMentorNavigation(
 
     val navigator = rememberDroidMentorNavigator(repository)
 
-    // Saver restoration cannot call suspend functions.
-    LaunchedEffect(navigator) {
-        navigator.synchronizeActiveConversation()
-    }
     val chatScopes: ChatViewModelScopes = viewModel()
     val clipboardManager = LocalClipboardManager.current
 
     val scope = rememberCoroutineScope()
     val navigationMutex = remember(navigator) { Mutex() }
+
+    // Startup must share navigation serialization: an old Title synchronization
+    // must not clear the selection of a New Chat that overtook it.
+    LaunchedEffect(navigator) {
+        navigationMutex.withLock {
+            navigator.synchronizeActiveConversation()
+        }
+    }
 
     val onNavigate: (NavigationAction) -> Unit = { action ->
         scope.launch {

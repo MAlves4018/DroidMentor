@@ -3,6 +3,7 @@ package ui.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import domain.model.Role
+import domain.model.Conversation
 import domain.model.identity.ConversationId
 import domain.model.identity.MessageId
 import domain.provider.ProviderFailure
@@ -20,6 +21,8 @@ import kotlinx.coroutines.launch
 import ui.chat.model.ChatErrorKind
 import ui.chat.model.ChatRequestState
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 /** Owns one conversation's request lifecycle; Compose remains a pure state renderer. */
 class ActiveChatViewModel(
@@ -36,7 +39,7 @@ class ActiveChatViewModel(
             "Cannot open unknown or deleted conversation: ${conversationId.value}"
         },
         initialUiState = initialUiState,
-        onConversationChanged = repository::save,
+        onConversationChanged = ::persistConversation,
         newMessageId = newMessageId,
     )
 
@@ -46,6 +49,21 @@ class ActiveChatViewModel(
     private var saveJob: Job? = null
     private var requestVersion = 0L
     private var pendingUserId: MessageId? = null
+
+    /** Cancellation can arrive after SQLite committed but before cache publication.
+     * Re-read durable truth before reporting failure. Only an exact accepted snapshot
+     * may continue to the synchronous StateHolder publication; rollback/delete still cancel. */
+    private suspend fun persistConversation(updated: Conversation) {
+        try {
+            repository.save(updated)
+        } catch (cancelled: CancellationException) {
+            val accepted = withContext(NonCancellable) {
+                repository.initialize()
+                repository.find(conversationId) == updated
+            }
+            if (!accepted) throw cancelled
+        }
+    }
 
     init {
         viewModelScope.launch {
@@ -93,7 +111,7 @@ class ActiveChatViewModel(
     private fun send() {
         if (
             saveJob?.isActive == true ||
-            requestJob?.isActive == true ||
+            requestJob?.isCompleted == false ||
             !uiState.value.canSend
         ) return
 
@@ -135,7 +153,7 @@ class ActiveChatViewModel(
     private fun retry() {
         if (
             saveJob?.isActive == true ||
-            requestJob?.isActive == true
+            requestJob?.isCompleted == false
         ) return
 
         if (
@@ -151,13 +169,13 @@ class ActiveChatViewModel(
         val job = requestJob ?: return
         if (!job.isActive) return
         requestVersion++
-        requestJob = null
         job.cancel()
         stateHolder.setRequestState(ChatRequestState.Stopped)
     }
 
     private fun requestReply(userId: MessageId) {
-        if (requestJob?.isActive == true) return
+        // A cancelled job may still be reconciling a committed write.
+        if (!viewModelScope.isActive || requestJob?.isCompleted == false) return
         val history = stateHolder.currentConversation.messages.toList()
         if (history.lastOrNull()?.id != userId || history.lastOrNull()?.role != Role.USER) return
         if (repository.find(conversationId) == null) return
