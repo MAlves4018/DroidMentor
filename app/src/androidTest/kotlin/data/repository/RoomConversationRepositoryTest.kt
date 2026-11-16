@@ -210,4 +210,30 @@ class RoomConversationRepositoryTest {
 
         assertNull(persisted)
     }
+
+    @Test
+    fun deletingInactiveConversationPreservesActiveChatAndMessagesAfterReopen() = runBlocking {
+        val inactive = repository.create()
+        repository.save(inactive.append(message("db002-a1", 0L, "First chat")))
+
+        val active = repository.create()
+        val savedActive = active
+            .append(message("db002-b1", 0L, "Second chat"))
+            .append(message("db002-b2", 1L, "Second reply", Role.MODEL))
+        repository.save(savedActive)
+
+        repository.delete(inactive.id)
+        database.close()
+        openDatabase()
+
+        assertNull(repository.find(inactive.id))
+        assertEquals(savedActive, repository.find(active.id))
+        assertEquals(active.id, repository.activeId)
+        assertEquals(active.id, repository.resumableId())
+
+        val removedMessages = runBlocking(Dispatchers.IO) {
+            database.messageDao().findByConversationId(inactive.id.value)
+        }
+        assertTrue(removedMessages.isEmpty())
+    }
 }

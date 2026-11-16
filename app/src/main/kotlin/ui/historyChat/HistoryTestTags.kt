@@ -5,4 +5,6 @@ object HistoryTestTags {
     const val NEW_CHAT_BUTTON = "history_new_chat_button"
     const val SETTINGS_BUTTON = "history_settings_button"
     const val ABOUT_BUTTON = "history_about_button"
+
+    fun conversationOptions(conversationId: String) = "history_conversation_options_$conversationId"
 }
