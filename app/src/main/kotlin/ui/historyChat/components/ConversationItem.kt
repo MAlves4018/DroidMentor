@@ -20,10 +20,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import ui.common.MentorIconButton
 import ui.historyChat.ConversationSummary
+import ui.historyChat.HistoryTestTags
+
 
 /**
  * Displays a conversation row with an overflow menu.
@@ -60,6 +63,7 @@ fun ConversationItem(
 
         Box {
             MentorIconButton(
+                modifier = Modifier.testTag(HistoryTestTags.conversationOptions(conversation.id)),
                 onClick = {
                     menuExpanded = true
                 }

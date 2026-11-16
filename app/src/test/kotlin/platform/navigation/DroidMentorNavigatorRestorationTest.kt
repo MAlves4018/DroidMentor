@@ -111,4 +111,90 @@ class DroidMentorNavigatorRestorationTest {
         assertEquals(a, repository.activeId)
         assertEquals(a, repository.resumableId())
     }
+
+        @Test fun savedTitleMustNotClearPersistedActiveConversation() = runTest {
+        val repository = FakeConversationRepository()
+        val saved = savedRoutes(DroidMentorNavigator(repository = repository), repository)
+        val activeId = repository.create().id
+
+        val restored = DroidMentorNavigator.saver(repository).restore(saved)!!
+        restored.synchronizeActiveConversation()
+
+        assertEquals(DroidMentorDestination.ActiveChat(activeId), restored.currentDestination)
+        assertEquals(activeId, repository.activeId)
+    }
+
+    @Test fun savedOldChatMustNotReplaceRoomActiveChat() = runTest {
+        val repository = FakeConversationRepository()
+        val old = DroidMentorNavigator(repository = repository)
+        old.handle(NavigationAction.NewChat)
+        val saved = savedRoutes(old, repository)
+        val activeId = repository.create().id
+
+        val restored = DroidMentorNavigator.saver(repository).restore(saved)!!
+        restored.synchronizeActiveConversation()
+
+        assertEquals(DroidMentorDestination.ActiveChat(activeId), restored.currentDestination)
+        assertEquals(activeId, repository.activeId)
+    }
+
+    @Test fun savedChatMustNotOverrideExplicitlyClearedSelection() = runTest {
+        val repository = FakeConversationRepository()
+        val old = DroidMentorNavigator(repository = repository)
+        old.handle(NavigationAction.NewChat)
+        val oldId = old.currentConversationId!!
+        val saved = savedRoutes(old, repository)
+        repository.leaveActive()
+
+        val restored = DroidMentorNavigator.saver(repository).restore(saved)!!
+        restored.synchronizeActiveConversation()
+
+        assertEquals(DroidMentorDestination.Title, restored.currentDestination)
+        assertNull(repository.activeId)
+        assertTrue(repository.find(oldId) != null)
+    }
+
+    @Test fun savedSettingsRetainsSettingsAndReturnsToRoomActiveChat() = runTest {
+        val repository = FakeConversationRepository()
+        val old = DroidMentorNavigator(repository = repository)
+        old.handle(NavigationAction.NewChat)
+        old.handle(NavigationAction.OpenSettings)
+        val saved = savedRoutes(old, repository)
+        val activeId = repository.create().id
+
+        val restored = DroidMentorNavigator.saver(repository).restore(saved)!!
+        assertEquals(DroidMentorDestination.Settings, restored.currentDestination)
+        restored.back()
+
+        assertEquals(DroidMentorDestination.ActiveChat(activeId), restored.currentDestination)
+        assertEquals(activeId, repository.activeId)
+    }
+
+    @Test fun noValidSavedRouteUsesValidRoomSelection() = runTest {
+        val repository = FakeConversationRepository()
+        val activeId = repository.create().id
+        val restored = DroidMentorNavigator.saver(repository)
+            .restore(arrayListOf("invalid", "chat:missing"))!!
+        restored.synchronizeActiveConversation()
+
+        assertEquals(DroidMentorDestination.ActiveChat(activeId), restored.currentDestination)
+        assertEquals(activeId, repository.activeId)
+    }
+
+    @Test fun savedSettingsWithClearedSelectionReturnsToTitle() = runTest {
+        val repository = FakeConversationRepository()
+        val old = DroidMentorNavigator(repository = repository)
+        old.handle(NavigationAction.NewChat)
+        val id = old.currentConversationId!!
+        old.handle(NavigationAction.OpenSettings)
+        val saved = savedRoutes(old, repository)
+        repository.leaveActive()
+
+        val restored = DroidMentorNavigator.saver(repository).restore(saved)!!
+        assertEquals(DroidMentorDestination.Settings, restored.currentDestination)
+        restored.back()
+        assertEquals(DroidMentorDestination.Title, restored.currentDestination)
+        assertNull(repository.activeId)
+        assertTrue(repository.find(id) != null)
+    }
 }
