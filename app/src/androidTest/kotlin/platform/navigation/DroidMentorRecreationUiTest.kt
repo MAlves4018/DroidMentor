@@ -15,12 +15,21 @@ import org.junit.Test
 import ui.chat.ActiveChatTestTags
 import ui.historyChat.HistoryTestTags
 import ui.settings.SettingsTestTags
+import ui.title.TitleTestTags
 
 /** Device gate: checks the real Activity lifecycle rather than invoking a Saver manually. */
 class DroidMentorRecreationUiTest {
 
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
+
+    private fun awaitDisplayed(tag: String) {
+        // Room/Activity initialization can suspend outside Compose idle work.
+        // Keep the existing visibility assertions and bound each transition.
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            runCatching { composeRule.onNodeWithTag(tag).assertIsDisplayed() }.isSuccess
+        }
+    }
 
     @Test
     fun rotationRecreatesSettingsAndBackReturnsToOriginalChat() {
@@ -41,10 +50,12 @@ class DroidMentorRecreationUiTest {
         // Recreate after cleanup so the navigator starts at Title.
         composeRule.activityRule.scenario.recreate()
         composeRule.waitForIdle()
+        awaitDisplayed(TitleTestTags.SETTINGS_BUTTON)
 
         composeRule.onNodeWithContentDescription("New chat")
             .performClick()
 
+        awaitDisplayed(ActiveChatTestTags.EMPTY_CONTENT)
         composeRule.onNodeWithTag(ActiveChatTestTags.EMPTY_CONTENT)
             .assertIsDisplayed()
 
@@ -53,9 +64,11 @@ class DroidMentorRecreationUiTest {
 
         composeRule.waitForIdle()
 
+        awaitDisplayed(HistoryTestTags.SETTINGS_BUTTON)
         composeRule.onNodeWithTag(HistoryTestTags.SETTINGS_BUTTON)
             .performClick()
 
+        awaitDisplayed(SettingsTestTags.API_KEY_ROW)
         composeRule.onNodeWithTag(SettingsTestTags.API_KEY_ROW)
             .performScrollTo()
             .assertIsDisplayed()
@@ -64,6 +77,7 @@ class DroidMentorRecreationUiTest {
         composeRule.activityRule.scenario.recreate()
         composeRule.waitForIdle()
 
+        awaitDisplayed(SettingsTestTags.API_KEY_ROW)
         composeRule.onNodeWithTag(SettingsTestTags.API_KEY_ROW)
             .performScrollTo()
             .assertIsDisplayed()
@@ -71,6 +85,7 @@ class DroidMentorRecreationUiTest {
         Espresso.pressBack()
         composeRule.waitForIdle()
 
+        awaitDisplayed(ActiveChatTestTags.EMPTY_CONTENT)
         composeRule.onNodeWithTag(ActiveChatTestTags.EMPTY_CONTENT)
             .assertIsDisplayed()
     }

@@ -22,7 +22,8 @@ fun ChatHistoryScreen(
     onAbout: () -> Unit,
     modifier: Modifier = Modifier,
     pendingDeletion: ConversationSummary? = null,
-    onTitleClick: () -> Unit = {}
+    onTitleClick: () -> Unit = {},
+    showSearch: Boolean = true,
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -37,9 +38,9 @@ fun ChatHistoryScreen(
                 onTitleClick = onTitleClick
             )
 
-            HistoryOrganizationArea(
-                onSearch = onSearch
-            )
+            if (showSearch) {
+                HistoryOrganizationArea(onSearch = onSearch)
+            }
 
             Box(modifier = Modifier.weight(1f)) {
                 when {

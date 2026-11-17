@@ -40,7 +40,7 @@ fun TitleScreen(state: TitleUiState, onAction: (TitleAction) -> Unit) {
                 onDraftChange = { onAction(TitleAction.DraftChanged(it)) },
                 canSend = false, // Title prompt handoff is not implemented; avoid a dead enabled action.
                 isGenerating = false,
-                attachmentsEnabled = true,
+                attachmentsEnabled = false, // Optional FILE-001 is not implemented in mentor_3.
                 attachment = null,
                 onAttachClick = { onAction(TitleAction.AddAttachmentClicked) },
                 onRemoveAttachment = {},

@@ -46,6 +46,14 @@ class DroidMentorNavigationUiTest {
                 DroidMentorNavigation()
             }
         }
+
+        // Room initialization suspends outside Compose's idle tracking. Wait for
+        // the real Title surface before looking up its header or sending input.
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithTag(TitleTestTags.SETTINGS_BUTTON)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag(TitleTestTags.SETTINGS_BUTTON).assertIsDisplayed()
     }
 
     private fun openHistory() {
@@ -53,11 +61,15 @@ class DroidMentorNavigationUiTest {
             .onNodeWithContentDescription("Open chat history")
             .performClick()
 
-        composeRule.waitForIdle()
-
-        composeRule
-            .onNodeWithTag(HistoryTestTags.TITLE_BUTTON)
-            .assertIsDisplayed()
+        // The drawer can still be outside the visible bounds while navigation
+        // and IME/layout transitions finish. Keep the visibility requirement.
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            runCatching {
+                composeRule.onNodeWithTag(HistoryTestTags.TITLE_BUTTON)
+                    .assertIsDisplayed()
+            }.isSuccess
+        }
+        composeRule.onNodeWithTag(HistoryTestTags.TITLE_BUTTON).assertIsDisplayed()
     }
 
     private fun startNewChat() {

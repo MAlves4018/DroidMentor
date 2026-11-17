@@ -39,7 +39,7 @@ class GeminiMentorProvider(
 ) : MentorProvider {
 
     companion object {
-        private const val DEFAULT_MODEL = "gemini-2.5-flash"
+        private const val DEFAULT_MODEL = "gemini-3.1-flash-lite"
 
         private const val DEFAULT_BASE_URL =
             "https://generativelanguage.googleapis.com/v1beta"

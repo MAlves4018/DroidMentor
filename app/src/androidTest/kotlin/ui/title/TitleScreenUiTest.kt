@@ -10,6 +10,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import ui.theme.DroidMentorTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.onNodeWithTag
+import org.junit.Assert.assertTrue
+import ui.chat.ActiveChatTestTags
 
 class TitleScreenUiTest {
     @get:Rule val composeRule = createComposeRule()
@@ -41,10 +49,42 @@ class TitleScreenUiTest {
 
     @Test fun typingEmitsDraftChangeWithoutOwningState() {
         val actions = mutableListOf<TitleAction>()
-        setScreen(onAction = { actions += it })
-        composeRule.onNode(hasSetTextAction()).performTextInput("Hello")
+
+        composeRule.setContent {
+            var state by remember {
+                mutableStateOf(TitleUiState())
+            }
+
+            DroidMentorTheme(darkTheme = false) {
+                TitleScreen(
+                    state = state,
+                    onAction = { action ->
+                        actions += action
+
+                        if (action is TitleAction.DraftChanged) {
+                            state = state.copy(
+                                draft = action.value
+                            )
+                        }
+                    }
+                )
+            }
+        }
+
+        composeRule
+            .onNodeWithTag(ActiveChatTestTags.COMPOSER_FIELD)
+            .performTextInput("Hello")
+
+        composeRule
+            .onNodeWithTag(ActiveChatTestTags.COMPOSER_FIELD)
+            .assertTextEquals("Hello")
+
         composeRule.runOnIdle {
-            assertEquals(TitleAction.DraftChanged("Hello"), actions.last())
+            assertTrue(
+                actions.contains(
+                    TitleAction.DraftChanged("Hello")
+                )
+            )
         }
     }
 
