@@ -70,6 +70,8 @@ class RoomConversationRepositoryTest {
         sequence = sequence
     )
 
+    // Existing tests
+
     @Test
     fun multipleConversationsArePersisted() = runBlocking {
         val first = repository.create()
@@ -148,6 +150,7 @@ class RoomConversationRepositoryTest {
     @Test
     fun deletingConversationDeletesMessages() = runBlocking {
         val conversation = repository.create()
+
         repository.save(
             conversation.append(message("m1", 0, "Hello"))
         )
@@ -157,10 +160,8 @@ class RoomConversationRepositoryTest {
         assertNull(repository.find(conversation.id))
         assertNull(repository.activeId)
 
-        val messages = runBlocking(Dispatchers.IO) {
-            database.messageDao()
-                .findByConversationId(conversation.id.value)
-        }
+        val messages = database.messageDao()
+            .findByConversationId(conversation.id.value)
 
         assertTrue(messages.isEmpty())
     }
@@ -212,28 +213,251 @@ class RoomConversationRepositoryTest {
     }
 
     @Test
-    fun deletingInactiveConversationPreservesActiveChatAndMessagesAfterReopen() = runBlocking {
-        val inactive = repository.create()
-        repository.save(inactive.append(message("db002-a1", 0L, "First chat")))
+    fun deletingInactiveConversationPreservesActiveChatAndMessagesAfterReopen() =
+        runBlocking {
 
-        val active = repository.create()
-        val savedActive = active
-            .append(message("db002-b1", 0L, "Second chat"))
-            .append(message("db002-b2", 1L, "Second reply", Role.MODEL))
-        repository.save(savedActive)
+            val inactive = repository.create()
+            repository.save(
+                inactive.append(
+                    message("db002-a1", 0L, "First chat")
+                )
+            )
 
-        repository.delete(inactive.id)
+            val active = repository.create()
+            val savedActive = active
+                .append(message("db002-b1", 0L, "Second chat"))
+                .append(message("db002-b2", 1L, "Second reply", Role.MODEL))
+
+            repository.save(savedActive)
+            repository.delete(inactive.id)
+
+            database.close()
+            openDatabase()
+
+            assertNull(repository.find(inactive.id))
+            assertEquals(savedActive, repository.find(active.id))
+            assertEquals(active.id, repository.activeId)
+            assertEquals(active.id, repository.resumableId())
+
+            val removedMessages = database.messageDao()
+                .findByConversationId(inactive.id.value)
+
+            assertTrue(removedMessages.isEmpty())
+        }
+
+    // New persisted rewrite tests
+
+    @Test
+    fun persistedRewritePreservesPrefixAndRemovesSuffix() = runBlocking {
+        val conversation = repository.create()
+            .append(message("u1", 0, "First question"))
+            .append(message("a1", 1, "First answer", Role.MODEL))
+            .append(message("u2", 2, "Second question"))
+            .append(message("a2", 3, "Second answer", Role.MODEL))
+            .append(message("u3", 4, "Third question"))
+
+        repository.save(conversation)
+
+        // Modify the persisted prefix without updating the repository cache.
+        // This proves the rewrite reads its prefix from Room.
+        database.messageDao().updateUserContent(
+            conversation.id.value,
+            "u1",
+            "First question updated in Room"
+        )
+
+        val rewritten = repository.rewriteUserMessage(
+            conversation.id,
+            MessageId("u2"),
+            "Rewritten second question"
+        )
+
+        assertEquals(
+            listOf("u1", "a1", "u2"),
+            rewritten.messages.map { it.id.value }
+        )
+
+        assertEquals(
+            listOf(
+                "First question updated in Room",
+                "First answer",
+                "Rewritten second question"
+            ),
+            rewritten.messages.map { it.content }
+        )
+
+        assertEquals(
+            listOf(0L, 1L, 2L),
+            rewritten.messages.map { it.sequence }
+        )
+
+        assertEquals(rewritten, repository.find(conversation.id))
+    }
+
+    @Test
+    fun persistedRewriteSurvivesDatabaseReopening() = runBlocking {
+        val conversation = repository.create()
+            .append(message("u1", 0, "Original"))
+            .append(message("a1", 1, "Answer", Role.MODEL))
+            .append(message("u2", 2, "Follow-up"))
+
+        repository.save(conversation)
+
+        val rewritten = repository.rewriteUserMessage(
+            conversation.id,
+            MessageId("u1"),
+            "Changed question"
+        )
+
         database.close()
         openDatabase()
 
-        assertNull(repository.find(inactive.id))
-        assertEquals(savedActive, repository.find(active.id))
-        assertEquals(active.id, repository.activeId)
-        assertEquals(active.id, repository.resumableId())
+        val loaded = repository.find(conversation.id)!!
 
-        val removedMessages = runBlocking(Dispatchers.IO) {
-            database.messageDao().findByConversationId(inactive.id.value)
-        }
-        assertTrue(removedMessages.isEmpty())
+        assertEquals(rewritten, loaded)
+        assertEquals(1, loaded.messages.size)
+        assertEquals("Changed question", loaded.messages.single().content)
+        assertEquals(conversation.id, repository.activeId)
+
+        val stored = database.messageDao()
+            .findByConversationId(conversation.id.value)
+
+        assertEquals(1, stored.size)
+    }
+
+    @Test
+    fun persistedRewritePreservesMessageIdentityAndTimestamp() = runBlocking {
+        val conversation = repository.create()
+            .append(message("u1", 0, "Original question"))
+            .append(message("a1", 1, "Original answer", Role.MODEL))
+
+        repository.save(conversation)
+
+        val before = database.messageDao()
+            .findById(conversation.id.value, "u1")!!
+
+        repository.rewriteUserMessage(
+            conversation.id,
+            MessageId("u1"),
+            "Updated question"
+        )
+
+        val after = database.messageDao()
+            .findById(conversation.id.value, "u1")!!
+
+        assertEquals(before.id, after.id)
+        assertEquals(before.sequence, after.sequence)
+        assertEquals(before.createdAtMillis, after.createdAtMillis)
+        assertEquals(before.role, after.role)
+        assertEquals("Updated question", after.content)
+    }
+
+    @Test
+    fun persistedRewriteRejectsModelMessageWithoutChanges() = runBlocking {
+        val conversation = repository.create()
+            .append(message("u1", 0, "Question"))
+            .append(message("a1", 1, "Answer", Role.MODEL))
+
+        repository.save(conversation)
+
+        val failed = runCatching {
+            repository.rewriteUserMessage(
+                conversation.id,
+                MessageId("a1"),
+                "Invalid edit"
+            )
+        }.isFailure
+
+        assertTrue(failed)
+        assertEquals(conversation, repository.find(conversation.id))
+
+        val stored = database.messageDao()
+            .findByConversationId(conversation.id.value)
+
+        assertEquals(2, stored.size)
+        assertEquals("Answer", stored.last().content)
+    }
+
+    @Test
+    fun persistedRewriteRejectsInvalidTargetsWithoutChanges() = runBlocking {
+        val first = repository.create()
+            .append(message("first-user", 0, "First conversation"))
+
+        repository.save(first)
+
+        val second = repository.create()
+            .append(message("second-user", 0, "Second conversation"))
+
+        repository.save(second)
+
+        val wrongConversation = runCatching {
+            repository.rewriteUserMessage(
+                first.id,
+                MessageId("second-user"),
+                "Should fail"
+            )
+        }.isFailure
+
+        val missingMessage = runCatching {
+            repository.rewriteUserMessage(
+                first.id,
+                MessageId("missing"),
+                "Should fail"
+            )
+        }.isFailure
+
+        val blankContent = runCatching {
+            repository.rewriteUserMessage(
+                first.id,
+                MessageId("first-user"),
+                "   "
+            )
+        }.isFailure
+
+        assertTrue(wrongConversation)
+        assertTrue(missingMessage)
+        assertTrue(blankContent)
+
+        assertEquals(first, repository.find(first.id))
+        assertEquals(second, repository.find(second.id))
+    }
+
+    @Test
+    fun failedRewriteTransactionRestoresOriginalMessages() = runBlocking {
+        val conversation = repository.create()
+            .append(message("u1", 0, "Original question"))
+            .append(message("a1", 1, "Original answer", Role.MODEL))
+            .append(message("u2", 2, "Another question"))
+
+        repository.save(conversation)
+
+        // Simulate a database failure after the update and suffix deletion.
+        val failed = runCatching {
+            database.withTransaction {
+                database.messageDao().updateUserContent(
+                    conversation.id.value,
+                    "u1",
+                    "Temporary rewrite"
+                )
+
+                database.messageDao().deleteAfterSequence(
+                    conversation.id.value,
+                    0L
+                )
+
+                error("Simulated transaction failure")
+            }
+        }.isFailure
+
+        assertTrue(failed)
+
+        database.close()
+        openDatabase()
+
+        // Both the update and deletion must have rolled back.
+        assertEquals(
+            conversation,
+            repository.find(conversation.id)
+        )
     }
 }
