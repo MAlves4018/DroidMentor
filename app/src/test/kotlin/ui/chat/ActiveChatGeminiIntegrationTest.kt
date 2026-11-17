@@ -1,6 +1,8 @@
 package ui.chat
 
 import data.InMemorySettingsRepository
+import domain.model.Conversation
+import domain.model.Message
 import domain.model.Role
 import domain.model.identity.ConversationId
 import domain.model.identity.MessageId
@@ -25,7 +27,8 @@ import ui.chat.model.ChatRequestState
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActiveChatGeminiIntegrationTest {
 
-    @get:Rule val dispatcherRule = MainDispatcherRule()
+    @get:Rule
+    val dispatcherRule = MainDispatcherRule()
 
     private class Fixture(
         val repository: FakeConversationRepository,
@@ -40,14 +43,21 @@ class ActiveChatGeminiIntegrationTest {
             repository = repository,
             settingsRepository = settings,
             sendMessageUseCase = SendMessageUseCase(provider, settings),
-            newMessageId = { MessageId("message-${++nextId}") },
+            newMessageId = {
+                MessageId("message-${++nextId}")
+            },
         )
 
-        val messages get() = repository.find(conversationId)!!.messages
+        val messages
+            get() = repository.find(conversationId)!!.messages
 
         fun typeAndSend(text: String) {
-            viewModel.onAction(ActiveChatAction.DraftChanged(text))
-            viewModel.onAction(ActiveChatAction.SendClicked)
+            viewModel.onAction(
+                ActiveChatAction.DraftChanged(text)
+            )
+            viewModel.onAction(
+                ActiveChatAction.SendClicked
+            )
         }
     }
 
@@ -61,21 +71,45 @@ class ActiveChatGeminiIntegrationTest {
         val f = fixture()
         f.settings.saveApiKey("dummy-key")
         runCurrent()
+
         f.typeAndSend("  What is StateFlow?  ")
-        assertEquals(listOf(Role.USER), f.messages.map { it.role })
-        assertEquals("What is StateFlow?", f.messages.single().content)
+
+        assertEquals(
+            listOf(Role.USER),
+            f.messages.map { it.role }
+        )
+        assertEquals(
+            "What is StateFlow?",
+            f.messages.single().content
+        )
         assertEquals(
             ChatRequestState.Generating,
             f.viewModel.uiState.value.requestState
         )
         assertFalse(f.viewModel.uiState.value.canSend)
+
         runCurrent()
+
         assertEquals(1, f.provider.requests.size)
-        assertEquals(f.messages, f.provider.requests.single().history)
-        assertEquals("dummy-key", f.provider.requests.single().apiKey)
-        f.provider.succeed(0, "  StateFlow holds state.  ")
+        assertEquals(
+            f.messages,
+            f.provider.requests.single().history
+        )
+        assertEquals(
+            "dummy-key",
+            f.provider.requests.single().apiKey
+        )
+
+        f.provider.succeed(
+            0,
+            "  StateFlow holds state.  "
+        )
         runCurrent()
-        assertEquals(listOf(Role.USER, Role.MODEL), f.messages.map { it.role })
+
+        assertEquals(
+            listOf(Role.USER, Role.MODEL),
+            f.messages.map { it.role }
+        )
         assertEquals(
             "StateFlow holds state.",
             f.viewModel.uiState.value.messages.last().content
@@ -92,14 +126,23 @@ class ActiveChatGeminiIntegrationTest {
         val f = fixture()
         f.settings.saveApiKey("dummy-key")
         runCurrent()
+
         f.typeAndSend("One")
-        f.viewModel.onAction(ActiveChatAction.DraftChanged("Two"))
-        f.viewModel.onAction(ActiveChatAction.SendClicked)
+        f.viewModel.onAction(
+            ActiveChatAction.DraftChanged("Two")
+        )
+        f.viewModel.onAction(
+            ActiveChatAction.SendClicked
+        )
+
         runCurrent()
+
         assertEquals(1, f.messages.size)
         assertEquals(1, f.provider.requests.size)
+
         f.provider.succeed(0, "Answer")
         runCurrent()
+
         assertEquals(2, f.messages.size)
     }
 
@@ -108,26 +151,42 @@ class ActiveChatGeminiIntegrationTest {
         val f = fixture()
         f.settings.saveApiKey("dummy-key")
         runCurrent()
+
         f.typeAndSend("Retry this")
         runCurrent()
-        f.provider.fail(0, ProviderFailure.RateLimited("30"))
+
+        f.provider.fail(
+            0,
+            ProviderFailure.RateLimited("30")
+        )
         runCurrent()
+
         assertEquals(1, f.messages.size)
         assertEquals(
-            ChatRequestState.Error(ChatErrorKind.RATE_LIMITED),
+            ChatRequestState.Error(
+                ChatErrorKind.RATE_LIMITED
+            ),
             f.viewModel.uiState.value.requestState
         )
-        f.viewModel.onAction(ActiveChatAction.RetryClicked)
-        f.viewModel.onAction(ActiveChatAction.RetryClicked)
+
+        f.viewModel.onAction(
+            ActiveChatAction.RetryClicked
+        )
+        f.viewModel.onAction(
+            ActiveChatAction.RetryClicked
+        )
         runCurrent()
+
         assertEquals(1, f.messages.size)
         assertEquals(2, f.provider.requests.size)
         assertEquals(
             f.provider.requests[0].history,
             f.provider.requests[1].history
         )
+
         f.provider.succeed(1, "Recovered")
         runCurrent()
+
         assertEquals(
             listOf(Role.USER, Role.MODEL),
             f.messages.map { it.role }
@@ -139,25 +198,39 @@ class ActiveChatGeminiIntegrationTest {
         val f = fixture()
         f.settings.saveApiKey("dummy-key")
         runCurrent()
+
         f.typeAndSend("Cancel")
         runCurrent()
-        f.viewModel.onAction(ActiveChatAction.StopClicked)
-        f.provider.requests.single().result.complete("Too late")
+
+        f.viewModel.onAction(
+            ActiveChatAction.StopClicked
+        )
+        f.provider.requests.single().result.complete(
+            "Too late"
+        )
         runCurrent()
+
         assertEquals(
             ChatRequestState.Stopped,
             f.viewModel.uiState.value.requestState
         )
-        assertEquals(listOf(Role.USER), f.messages.map { it.role })
+        assertEquals(
+            listOf(Role.USER),
+            f.messages.map { it.role }
+        )
     }
 
     @Test
     fun missingKeyBlocksSendAndNeverContactsProvider() = runTest {
         val f = fixture()
         runCurrent()
+
         f.typeAndSend("No key")
         runCurrent()
-        assertFalse(f.viewModel.uiState.value.providerConfigured)
+
+        assertFalse(
+            f.viewModel.uiState.value.providerConfigured
+        )
         assertEquals(0, f.messages.size)
         assertTrue(f.provider.requests.isEmpty())
     }
@@ -166,40 +239,65 @@ class ActiveChatGeminiIntegrationTest {
     fun configuredStateFollowsSettingsChanges() = runTest {
         val f = fixture()
         runCurrent()
-        assertFalse(f.viewModel.uiState.value.providerConfigured)
+
+        assertFalse(
+            f.viewModel.uiState.value.providerConfigured
+        )
+
         f.settings.saveApiKey("key")
         runCurrent()
-        assertTrue(f.viewModel.uiState.value.providerConfigured)
+
+        assertTrue(
+            f.viewModel.uiState.value.providerConfigured
+        )
+
         f.settings.removeApiKey()
         runCurrent()
-        assertFalse(f.viewModel.uiState.value.providerConfigured)
+
+        assertFalse(
+            f.viewModel.uiState.value.providerConfigured
+        )
     }
 
     @Test
     fun mappedFailuresNeverInventAssistantTurns() = runTest {
         val cases = listOf(
-            ProviderFailure.Offline to ChatErrorKind.OFFLINE,
-            ProviderFailure.Authentication to ChatErrorKind.INVALID_API_KEY,
-            ProviderFailure.ServerError(503) to ChatErrorKind.SERVER_UNAVAILABLE,
-            ProviderFailure.Timeout to ChatErrorKind.TIMEOUT,
-            ProviderFailure.Transport(IOException("network down")) to ChatErrorKind.TRANSPORT,
-            ProviderFailure.Protocol() to ChatErrorKind.PROTOCOL,
-            ProviderFailure.HttpError(400) to ChatErrorKind.GENERIC_PROVIDER_ERROR,
+            ProviderFailure.Offline to
+                    ChatErrorKind.OFFLINE,
+            ProviderFailure.Authentication to
+                    ChatErrorKind.INVALID_API_KEY,
+            ProviderFailure.ServerError(503) to
+                    ChatErrorKind.SERVER_UNAVAILABLE,
+            ProviderFailure.Timeout to
+                    ChatErrorKind.TIMEOUT,
+            ProviderFailure.Transport(
+                IOException("network down")
+            ) to ChatErrorKind.TRANSPORT,
+            ProviderFailure.Protocol() to
+                    ChatErrorKind.PROTOCOL,
+            ProviderFailure.HttpError(400) to
+                    ChatErrorKind.GENERIC_PROVIDER_ERROR,
         )
 
         for ((failure, kind) in cases) {
             val f = fixture()
             f.settings.saveApiKey("dummy-key")
             runCurrent()
+
             f.typeAndSend("Explain")
             runCurrent()
+
             f.provider.fail(0, failure)
             runCurrent()
+
             assertEquals(
                 ChatRequestState.Error(kind),
                 f.viewModel.uiState.value.requestState
             )
-            assertEquals(listOf(Role.USER), f.messages.map { it.role })
+            assertEquals(
+                listOf(Role.USER),
+                f.messages.map { it.role }
+            )
         }
     }
 
@@ -208,12 +306,17 @@ class ActiveChatGeminiIntegrationTest {
         val f = fixture()
         f.settings.saveApiKey("dummy-key")
         runCurrent()
+
         f.typeAndSend("Will be deleted")
         runCurrent()
+
         f.repository.delete(f.conversationId)
         f.provider.succeed(0, "Orphan")
         runCurrent()
-        assertNull(f.repository.find(f.conversationId))
+
+        assertNull(
+            f.repository.find(f.conversationId)
+        )
     }
 
     @Test
@@ -221,26 +324,242 @@ class ActiveChatGeminiIntegrationTest {
         val repository = FakeConversationRepository()
         val first = repository.create().id
         val second = repository.create().id
+
         val settings = InMemorySettingsRepository()
         settings.saveApiKey("dummy")
+
         val provider = ControlledMentorProvider()
 
         val firstVm = ActiveChatViewModel(
             conversationId = first,
             repository = repository,
             settingsRepository = settings,
-            sendMessageUseCase = SendMessageUseCase(provider, settings),
+            sendMessageUseCase = SendMessageUseCase(
+                provider,
+                settings
+            ),
         )
 
         runCurrent()
-        firstVm.onAction(ActiveChatAction.DraftChanged("In first"))
-        firstVm.onAction(ActiveChatAction.SendClicked)
+
+        firstVm.onAction(
+            ActiveChatAction.DraftChanged("In first")
+        )
+        firstVm.onAction(
+            ActiveChatAction.SendClicked
+        )
         runCurrent()
+
         repository.activate(second)
+
         provider.succeed(0, "Reply to first")
         runCurrent()
-        assertEquals(2, repository.find(first)!!.messages.size)
-        assertEquals(0, repository.find(second)!!.messages.size)
+
+        assertEquals(
+            2,
+            repository.find(first)!!.messages.size
+        )
+        assertEquals(
+            0,
+            repository.find(second)!!.messages.size
+        )
         assertEquals(second, repository.activeId)
+    }
+
+    // New test: rewriting automatically regenerates
+    // the MODEL response from the updated history.
+
+    @Test
+    fun rewriteAutomaticallyRegeneratesFromUpdatedHistory() = runTest {
+        val conversationId = ConversationId("rewrite-test")
+
+        val original = Conversation(
+            id = conversationId,
+            messages = listOf(
+                Message(
+                    id = MessageId("u1"),
+                    role = Role.USER,
+                    content = "First question",
+                    sequence = 0L
+                ),
+                Message(
+                    id = MessageId("a1"),
+                    role = Role.MODEL,
+                    content = "First answer",
+                    sequence = 1L
+                ),
+                Message(
+                    id = MessageId("u2"),
+                    role = Role.USER,
+                    content = "Second question",
+                    sequence = 2L
+                ),
+                Message(
+                    id = MessageId("a2"),
+                    role = Role.MODEL,
+                    content = "Obsolete answer",
+                    sequence = 3L
+                )
+            )
+        )
+
+        val repository = FakeConversationRepository(
+            initialConversations = listOf(original),
+            initialActiveId = conversationId
+        )
+
+        val f = Fixture(repository, conversationId)
+        f.settings.saveApiKey("dummy-key")
+        runCurrent()
+
+        // 1. Rewrite the second USER message.
+        f.viewModel.onAction(
+            ActiveChatAction.EditMessageClicked("u2")
+        )
+        f.viewModel.onAction(
+            ActiveChatAction.EditDraftChanged(
+                "Rewritten question"
+            )
+        )
+        f.viewModel.onAction(
+            ActiveChatAction.SaveEditClicked
+        )
+        f.viewModel.onAction(
+            ActiveChatAction.ConfirmRewriteClicked
+        )
+
+        runCurrent()
+
+        // 2. The old MODEL response is removed.
+        assertEquals(
+            listOf("u1", "a1", "u2"),
+            f.messages.map { it.id.value }
+        )
+
+        assertEquals(
+            listOf(
+                "First question",
+                "First answer",
+                "Rewritten question"
+            ),
+            f.messages.map { it.content }
+        )
+
+        assertFalse(
+            f.messages.any {
+                it.content == "Obsolete answer"
+            }
+        )
+
+        // 3. Gemini is contacted automatically.
+        // No additional USER message is submitted.
+        assertEquals(1, f.provider.requests.size)
+
+        val regeneratedHistory =
+            f.provider.requests[0].history
+
+        assertEquals(
+            f.messages,
+            regeneratedHistory
+        )
+
+        assertEquals(
+            listOf(Role.USER, Role.MODEL, Role.USER),
+            regeneratedHistory.map { it.role }
+        )
+
+        assertEquals(
+            listOf(0L, 1L, 2L),
+            regeneratedHistory.map { it.sequence }
+        )
+
+        assertEquals(
+            ChatRequestState.Generating,
+            f.viewModel.uiState.value.requestState
+        )
+
+        // 4. Complete the regenerated response.
+        f.provider.succeed(
+            0,
+            "Replacement answer"
+        )
+        runCurrent()
+
+        assertEquals(
+            listOf(
+                "First question",
+                "First answer",
+                "Rewritten question",
+                "Replacement answer"
+            ),
+            f.messages.map { it.content }
+        )
+
+        assertEquals(
+            listOf(
+                Role.USER,
+                Role.MODEL,
+                Role.USER,
+                Role.MODEL
+            ),
+            f.messages.map { it.role }
+        )
+
+        assertEquals(
+            listOf(0L, 1L, 2L, 3L),
+            f.messages.map { it.sequence }
+        )
+
+        assertEquals(
+            ChatRequestState.Idle,
+            f.viewModel.uiState.value.requestState
+        )
+
+        // 5. A subsequent question also uses
+        // the new valid conversation history.
+        f.typeAndSend("New follow-up")
+        runCurrent()
+
+        assertEquals(2, f.provider.requests.size)
+
+        val followUpHistory =
+            f.provider.requests[1].history
+
+        assertEquals(
+            listOf(
+                "First question",
+                "First answer",
+                "Rewritten question",
+                "Replacement answer",
+                "New follow-up"
+            ),
+            followUpHistory.map { it.content }
+        )
+
+        assertFalse(
+            followUpHistory.any {
+                it.content == "Obsolete answer"
+            }
+        )
+
+        assertEquals(
+            f.messages,
+            followUpHistory
+        )
+
+        f.provider.succeed(
+            1,
+            "Follow-up answer"
+        )
+        runCurrent()
+
+        assertEquals(
+            "Follow-up answer",
+            f.messages.last().content
+        )
+        assertEquals(
+            Role.MODEL,
+            f.messages.last().role
+        )
     }
 }

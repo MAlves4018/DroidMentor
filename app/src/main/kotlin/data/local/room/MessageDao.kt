@@ -7,7 +7,7 @@ import androidx.room.Upsert
 @Dao
 interface MessageDao {
 
-    // Caller must bound messageIds to 998 on legacy Android (one extra parent bind).
+    // Check message ownership in batches for older SQLite versions.
     @Query("""
         SELECT COUNT(*) FROM messages
         WHERE id IN (:messageIds) AND conversationId != :conversationId
@@ -26,12 +26,37 @@ interface MessageDao {
         conversationId: String
     ): List<MessageEntity>
 
+    // Retrieve the exact persisted message.
+    @Query("""
+        SELECT * FROM messages
+        WHERE conversationId = :conversationId
+        AND id = :messageId
+        LIMIT 1
+    """)
+    suspend fun findById(
+        conversationId: String,
+        messageId: String
+    ): MessageEntity?
+
+    // Update only an existing USER message.
+    @Query("""
+        UPDATE messages
+        SET content = :newContent
+        WHERE conversationId = :conversationId
+        AND id = :messageId
+        AND role = 'USER'
+    """)
+    suspend fun updateUserContent(
+        conversationId: String,
+        messageId: String,
+        newContent: String
+    ): Int
+
     @Upsert
     suspend fun upsertAll(
         messages: List<MessageEntity>
     )
 
-    // Caller must bound messageIds to 998; NOT IN batches are not equivalent deletes.
     @Query("""
         DELETE FROM messages
         WHERE conversationId = :conversationId

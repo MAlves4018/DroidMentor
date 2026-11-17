@@ -13,8 +13,8 @@ import ui.chat.model.ChatRequestState
 import ui.chat.model.MessageEditState
 
 /**
- * Framework-independent Active Chat state machine used before provider effects exist.
- * It owns one immutable Conversation and projects it into the existing UI-002 boundary.
+ * Framework-independent Active Chat state machine.
+ * Owns one immutable Conversation and projects it into the UI state.
  */
 class ActiveChatStateHolder(
     val conversationId: ConversationId,
@@ -24,6 +24,8 @@ class ActiveChatStateHolder(
     private val newMessageId: () -> MessageId = {
         MessageId(UUID.randomUUID().toString())
     },
+    private val onRewriteRequested:
+    (suspend (MessageId, String) -> Conversation)? = null,
 ) {
     init {
         require(initialConversation.id == conversationId) {
@@ -33,25 +35,24 @@ class ActiveChatStateHolder(
 
     private var conversation: Conversation = initialConversation
 
-    // A suspend save serializes conversation mutations, while draft input remains
-    // responsive. Publishing the saved snapshot must preserve newer draft text.
     private var isPersisting = false
     private var draftRevision = 0L
 
     private val mutableUiState = MutableStateFlow(
         initialUiState.copy(messages = initialConversation.toChatMessagesUi())
     )
+
     val uiState: StateFlow<ActiveChatUiState> = mutableUiState.asStateFlow()
 
-    /** Synchronous snapshot kept for existing reducer tests and non-Compose callers. */
     var state: ActiveChatUiState
         get() = mutableUiState.value
-        private set(value) { mutableUiState.value = value }
+        private set(value) {
+            mutableUiState.value = value
+        }
 
     val currentConversation: Conversation
         get() = conversation
 
-    /** Provider readiness is observed by the ViewModel, never guessed by Compose. */
     fun setProviderConfigured(configured: Boolean) {
         state = state.copy(providerConfigured = configured)
     }
@@ -60,24 +61,37 @@ class ActiveChatStateHolder(
         state = state.copy(requestState = requestState)
     }
 
-    /** Commit exactly one MODEL message after a successful provider response. */
     suspend fun appendModelReply(text: String): Boolean {
         val content = text.trim()
-        if (isPersisting || state.requestState !is ChatRequestState.Generating || content.isEmpty()) {
+
+        if (
+            isPersisting ||
+            state.requestState !is ChatRequestState.Generating ||
+            content.isEmpty()
+        ) {
             return false
         }
+
         val message = Message(
             id = newMessageId(),
             role = Role.MODEL,
             content = content,
             sequence = conversation.nextSequence,
         )
+
         val updated = conversation.append(message)
+
         isPersisting = true
+
         try {
             onConversationChanged(updated)
+
             conversation = updated
-            state = state.copy(messages = updated.toChatMessagesUi())
+
+            state = state.copy(
+                messages = updated.toChatMessagesUi()
+            )
+
             return true
         } finally {
             isPersisting = false
@@ -85,46 +99,65 @@ class ActiveChatStateHolder(
     }
 
     suspend fun onAction(action: ActiveChatAction) {
-        if (isPersisting && action !is ActiveChatAction.DraftChanged) return
+        if (
+            isPersisting &&
+            action !is ActiveChatAction.DraftChanged
+        ) {
+            return
+        }
 
         when (action) {
             is ActiveChatAction.DraftChanged -> {
                 draftRevision++
-                state = state.copy(draft = action.value)
+
+                state = state.copy(
+                    draft = action.value
+                )
             }
 
             ActiveChatAction.SendClicked -> sendLocalUserMessage()
 
-            is ActiveChatAction.EditMessageClicked -> beginEdit(action.messageId)
+            is ActiveChatAction.EditMessageClicked ->
+                beginEdit(action.messageId)
 
-            is ActiveChatAction.EditDraftChanged -> updateEditDraft(action.value)
+            is ActiveChatAction.EditDraftChanged ->
+                updateEditDraft(action.value)
 
-            ActiveChatAction.CancelEditClicked -> cancelEdit()
+            ActiveChatAction.CancelEditClicked ->
+                cancelEdit()
 
-            ActiveChatAction.SaveEditClicked -> requestRewriteConfirmation()
+            ActiveChatAction.SaveEditClicked ->
+                requestRewriteConfirmation()
 
-            ActiveChatAction.ReturnToEditClicked -> returnToEdit()
+            ActiveChatAction.ReturnToEditClicked ->
+                returnToEdit()
 
-            ActiveChatAction.ConfirmRewriteClicked -> confirmRewrite()
+            ActiveChatAction.ConfirmRewriteClicked ->
+                confirmRewrite()
 
             ActiveChatAction.RemoveAttachmentClicked -> {
-                state = state.copy(attachmentDraft = null)
+                state = state.copy(
+                    attachmentDraft = null
+                )
             }
 
             is ActiveChatAction.ReasoningSelected -> {
                 if (action.level in state.supportedReasoningLevels) {
-                    state = state.copy(reasoningLevel = action.level)
+                    state = state.copy(
+                        reasoningLevel = action.level
+                    )
                 }
             }
 
             ActiveChatAction.DismissFeedbackClicked -> {
-                state = state.copy(requestState = ChatRequestState.Idle)
+                state = state.copy(
+                    requestState = ChatRequestState.Idle
+                )
             }
 
             ActiveChatAction.StopClicked,
             ActiveChatAction.AddAttachmentClicked,
-            ActiveChatAction.RetryClicked,
-                -> Unit
+            ActiveChatAction.RetryClicked -> Unit
         }
     }
 
@@ -133,8 +166,6 @@ class ActiveChatStateHolder(
         val submittedRevision = draftRevision
         val content = submittedDraft.trim()
 
-        // The state machine protects the same send invariant as the UI. FLOW-002 is text-only;
-        // attachment effects are introduced by a later task.
         if (!state.canSend || content.isEmpty()) {
             return
         }
@@ -146,16 +177,22 @@ class ActiveChatStateHolder(
             sequence = conversation.nextSequence,
         )
 
-        // Publish the new local snapshot only after the repository has accepted it.
-        // If persistence fails, keep the draft and the current conversation intact.
         val updated = conversation.append(message)
+
         isPersisting = true
+
         try {
             onConversationChanged(updated)
+
             conversation = updated
+
             state = state.copy(
                 messages = updated.toChatMessagesUi(),
-                draft = if (draftRevision == submittedRevision) "" else state.draft,
+                draft = if (draftRevision == submittedRevision) {
+                    ""
+                } else {
+                    state.draft
+                },
             )
         } finally {
             isPersisting = false
@@ -180,10 +217,13 @@ class ActiveChatStateHolder(
     }
 
     private fun updateEditDraft(value: String) {
-        val editing = state.editState as? MessageEditState.Editing ?: return
+        val editing =
+            state.editState as? MessageEditState.Editing ?: return
 
         state = state.copy(
-            editState = editing.copy(draft = value)
+            editState = editing.copy(
+                draft = value
+            )
         )
     }
 
@@ -192,11 +232,15 @@ class ActiveChatStateHolder(
             return
         }
 
-        state = state.copy(editState = MessageEditState.None)
+        state = state.copy(
+            editState = MessageEditState.None
+        )
     }
 
     private fun requestRewriteConfirmation() {
-        val editing = state.editState as? MessageEditState.Editing ?: return
+        val editing =
+            state.editState as? MessageEditState.Editing ?: return
+
         val replacement = editing.draft.trim()
 
         if (replacement.isEmpty()) {
@@ -204,11 +248,14 @@ class ActiveChatStateHolder(
         }
 
         val current = conversation.messages.firstOrNull {
-            it.id.value == editing.messageId && it.role == Role.USER
+            it.id.value == editing.messageId &&
+                    it.role == Role.USER
         } ?: return
 
         if (replacement == current.content) {
-            state = state.copy(editState = MessageEditState.None)
+            state = state.copy(
+                editState = MessageEditState.None
+            )
             return
         }
 
@@ -221,7 +268,9 @@ class ActiveChatStateHolder(
     }
 
     private fun returnToEdit() {
-        val confirmation = state.editState as? MessageEditState.ConfirmRewrite ?: return
+        val confirmation =
+            state.editState as? MessageEditState.ConfirmRewrite
+                ?: return
 
         state = state.copy(
             editState = MessageEditState.Editing(
@@ -233,22 +282,40 @@ class ActiveChatStateHolder(
 
     private suspend fun confirmRewrite() {
         if (state.isGenerating) return
-        val confirmation = state.editState as? MessageEditState.ConfirmRewrite ?: return
 
-        val target = conversation.messages.firstOrNull {
-            it.id.value == confirmation.messageId && it.role == Role.USER
-        } ?: return
+        val confirmation =
+            state.editState as? MessageEditState.ConfirmRewrite
+                ?: return
 
-        // Do not drop the original response suffix until the replacement is stored.
-        // A failed write leaves the confirmation available for an explicit retry.
-        val updated = conversation.rewriteUserMessage(
-            messageId = target.id,
-            replacementText = confirmation.replacementText,
-        )
         isPersisting = true
+
         try {
-            onConversationChanged(updated)
+            val messageId = MessageId(confirmation.messageId)
+
+            val updated = if (onRewriteRequested != null) {
+                // Production: rewrite directly from persisted data.
+                onRewriteRequested.invoke(
+                    messageId,
+                    confirmation.replacementText
+                )
+            } else {
+                // Compatibility for existing in-memory state-holder tests.
+                val result = conversation.rewriteUserMessage(
+                    messageId = messageId,
+                    replacementText = confirmation.replacementText,
+                )
+
+                onConversationChanged(result)
+                result
+            }
+
+            check(updated.id == conversationId) {
+                "Rewritten conversation ID does not match."
+            }
+
+            // Publish the returned persisted conversation.
             conversation = updated
+
             state = state.copy(
                 messages = updated.toChatMessagesUi(),
                 editState = MessageEditState.None,

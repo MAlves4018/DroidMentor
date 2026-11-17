@@ -2,8 +2,8 @@ package ui.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import domain.model.Role
 import domain.model.Conversation
+import domain.model.Role
 import domain.model.identity.ConversationId
 import domain.model.identity.MessageId
 import domain.provider.ProviderFailure
@@ -12,34 +12,41 @@ import domain.repository.SettingsRepository
 import domain.usecase.SendMessageUseCase
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import ui.chat.model.ChatErrorKind
 import ui.chat.model.ChatRequestState
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.withContext
 
-/** Owns one conversation's request lifecycle; Compose remains a pure state renderer. */
 class ActiveChatViewModel(
     val conversationId: ConversationId,
     private val repository: ConversationRepository,
     private val settingsRepository: SettingsRepository,
     private val sendMessageUseCase: SendMessageUseCase,
-    initialUiState: ActiveChatUiState = ActiveChatUiState(providerConfigured = false),
-    newMessageId: () -> MessageId = { MessageId(UUID.randomUUID().toString()) },
+    initialUiState: ActiveChatUiState = ActiveChatUiState(
+        providerConfigured = false
+    ),
+    newMessageId: () -> MessageId = {
+        MessageId(UUID.randomUUID().toString())
+    },
 ) : ViewModel() {
+
     private val stateHolder = ActiveChatStateHolder(
         conversationId = conversationId,
-        initialConversation = requireNotNull(repository.find(conversationId)) {
+        initialConversation = requireNotNull(
+            repository.find(conversationId)
+        ) {
             "Cannot open unknown or deleted conversation: ${conversationId.value}"
         },
         initialUiState = initialUiState,
         onConversationChanged = ::persistConversation,
+        onRewriteRequested = ::rewritePersistedMessage,
         newMessageId = newMessageId,
     )
 
@@ -50,9 +57,6 @@ class ActiveChatViewModel(
     private var requestVersion = 0L
     private var pendingUserId: MessageId? = null
 
-    /** Cancellation can arrive after SQLite committed but before cache publication.
-     * Re-read durable truth before reporting failure. Only an exact accepted snapshot
-     * may continue to the synchronous StateHolder publication; rollback/delete still cancel. */
     private suspend fun persistConversation(updated: Conversation) {
         try {
             repository.save(updated)
@@ -61,7 +65,38 @@ class ActiveChatViewModel(
                 repository.initialize()
                 repository.find(conversationId) == updated
             }
+
             if (!accepted) throw cancelled
+        }
+    }
+
+    private suspend fun rewritePersistedMessage(
+        messageId: MessageId,
+        replacementText: String
+    ): Conversation {
+        try {
+            return repository.rewriteUserMessage(
+                conversationId = conversationId,
+                messageId = messageId,
+                replacementText = replacementText
+            )
+        } catch (cancelled: CancellationException) {
+            val expected = stateHolder.currentConversation
+                .rewriteUserMessage(
+                    messageId = messageId,
+                    replacementText = replacementText
+                )
+
+            val persisted = withContext(NonCancellable) {
+                repository.initialize()
+                repository.find(conversationId)
+            }
+
+            if (persisted == expected) {
+                return persisted
+            }
+
+            throw cancelled
         }
     }
 
@@ -76,32 +111,55 @@ class ActiveChatViewModel(
     fun onAction(action: ActiveChatAction) {
         when (action) {
             ActiveChatAction.SendClicked -> send()
+
             ActiveChatAction.RetryClicked -> retry()
+
             ActiveChatAction.StopClicked -> stop()
 
             ActiveChatAction.ConfirmRewriteClicked -> {
-                viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                viewModelScope.launch(
+                    start = CoroutineStart.UNDISPATCHED
+                ) {
                     val before = stateHolder.currentConversation
 
                     try {
+                        // Rewrite is persisted and reloaded first.
                         stateHolder.onAction(action)
 
                         if (before != stateHolder.currentConversation) {
+                            // Ensure a previously cancelled request has
+                            // finished before generating the new response.
+                            requestJob?.join()
+
+                            val last = stateHolder.currentConversation
+                                .messages.lastOrNull()
+
                             pendingUserId = null
+
+                            if (last?.role == Role.USER) {
+                                pendingUserId = last.id
+
+                                // Generates the replacement MODEL reply
+                                // using the persisted rewritten history.
+                                requestReply(last.id)
+                            }
                         }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (_: Exception) {
-                        // Persistence failed; the original conversation remains.
                         stateHolder.setRequestState(
-                            ChatRequestState.Error(ChatErrorKind.GENERIC_PROVIDER_ERROR)
+                            ChatRequestState.Error(
+                                ChatErrorKind.GENERIC_PROVIDER_ERROR
+                            )
                         )
                     }
                 }
             }
 
             else -> {
-                viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                viewModelScope.launch(
+                    start = CoroutineStart.UNDISPATCHED
+                ) {
                     stateHolder.onAction(action)
                 }
             }
@@ -120,14 +178,16 @@ class ActiveChatViewModel(
         ) {
             try {
                 val previousLastId =
-                    stateHolder.currentConversation.messages.lastOrNull()?.id
+                    stateHolder.currentConversation.messages
+                        .lastOrNull()?.id
 
-                // Persist the USER message before requesting Gemini.
-                stateHolder.onAction(ActiveChatAction.SendClicked)
+                stateHolder.onAction(
+                    ActiveChatAction.SendClicked
+                )
 
                 val last =
-                    stateHolder.currentConversation.messages.lastOrNull()
-                        ?: return@launch
+                    stateHolder.currentConversation.messages
+                        .lastOrNull() ?: return@launch
 
                 if (
                     last.id == previousLastId ||
@@ -136,15 +196,15 @@ class ActiveChatViewModel(
 
                 pendingUserId = last.id
 
-                // Only runs after Room successfully saves the message.
                 requestReply(last.id)
 
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // The draft is preserved if persistence fails.
                 stateHolder.setRequestState(
-                    ChatRequestState.Error(ChatErrorKind.GENERIC_PROVIDER_ERROR)
+                    ChatRequestState.Error(
+                        ChatErrorKind.GENERIC_PROVIDER_ERROR
+                    )
                 )
             }
         }
@@ -162,61 +222,144 @@ class ActiveChatViewModel(
         ) return
 
         val id = pendingUserId ?: return
+
         requestReply(id)
     }
 
     private fun stop() {
         val job = requestJob ?: return
+
         if (!job.isActive) return
+
         requestVersion++
         job.cancel()
-        stateHolder.setRequestState(ChatRequestState.Stopped)
+
+        stateHolder.setRequestState(
+            ChatRequestState.Stopped
+        )
     }
 
     private fun requestReply(userId: MessageId) {
-        // A cancelled job may still be reconciling a committed write.
-        if (!viewModelScope.isActive || requestJob?.isCompleted == false) return
-        val history = stateHolder.currentConversation.messages.toList()
-        if (history.lastOrNull()?.id != userId || history.lastOrNull()?.role != Role.USER) return
-        if (repository.find(conversationId) == null) return
+        if (
+            !viewModelScope.isActive ||
+            requestJob?.isCompleted == false
+        ) return
+
         val version = ++requestVersion
-        stateHolder.setRequestState(ChatRequestState.Generating)
+
+        stateHolder.setRequestState(
+            ChatRequestState.Generating
+        )
+
         requestJob = viewModelScope.launch {
             try {
+                // Reload committed conversation history from Room.
+                repository.initialize()
+
+                if (
+                    !currentCoroutineContext().isActive ||
+                    version != requestVersion
+                ) return@launch
+
+                val history = repository.find(conversationId)
+                    ?.messages
+                    ?.toList()
+                    ?: return@launch
+
+                if (
+                    history.lastOrNull()?.id != userId ||
+                    history.lastOrNull()?.role != Role.USER ||
+                    stateHolder.currentConversation.messages != history
+                ) {
+                    stateHolder.setRequestState(
+                        ChatRequestState.Error(
+                            ChatErrorKind.PROTOCOL
+                        )
+                    )
+                    return@launch
+                }
+
                 val reply = sendMessageUseCase(history)
-                if (!currentCoroutineContext().isActive || version != requestVersion ||
-                    repository.find(conversationId) == null ||
-                    stateHolder.currentConversation.messages.lastOrNull()?.id != userId) return@launch
+
+                if (
+                    !currentCoroutineContext().isActive ||
+                    version != requestVersion ||
+                    repository.find(conversationId)?.messages != history ||
+                    stateHolder.currentConversation.messages != history
+                ) return@launch
+
                 if (stateHolder.appendModelReply(reply)) {
                     pendingUserId = null
-                    stateHolder.setRequestState(ChatRequestState.Idle)
+
+                    stateHolder.setRequestState(
+                        ChatRequestState.Idle
+                    )
                 } else {
-                    stateHolder.setRequestState(ChatRequestState.Error(ChatErrorKind.PROTOCOL))
+                    stateHolder.setRequestState(
+                        ChatRequestState.Error(
+                            ChatErrorKind.PROTOCOL
+                        )
+                    )
                 }
+
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: ProviderFailure) {
-                if (version == requestVersion && repository.find(conversationId) != null) {
-                    stateHolder.setRequestState(ChatRequestState.Error(failure.toChatErrorKind()))
+                if (
+                    version == requestVersion &&
+                    repository.find(conversationId) != null
+                ) {
+                    stateHolder.setRequestState(
+                        ChatRequestState.Error(
+                            failure.toChatErrorKind()
+                        )
+                    )
                 }
             } catch (_: Exception) {
-                if (version == requestVersion && repository.find(conversationId) != null) {
-                    stateHolder.setRequestState(ChatRequestState.Error(ChatErrorKind.GENERIC_PROVIDER_ERROR))
+                if (
+                    version == requestVersion &&
+                    repository.find(conversationId) != null
+                ) {
+                    stateHolder.setRequestState(
+                        ChatRequestState.Error(
+                            ChatErrorKind.GENERIC_PROVIDER_ERROR
+                        )
+                    )
                 }
             }
         }
     }
 
-    private fun ProviderFailure.toChatErrorKind(): ChatErrorKind = when (this) {
-        ProviderFailure.Offline -> ChatErrorKind.OFFLINE
-        ProviderFailure.Authentication -> ChatErrorKind.INVALID_API_KEY
-        is ProviderFailure.RateLimited -> ChatErrorKind.RATE_LIMITED
-        is ProviderFailure.ServerError -> ChatErrorKind.SERVER_UNAVAILABLE
-        ProviderFailure.Timeout -> ChatErrorKind.TIMEOUT
-        is ProviderFailure.Transport -> ChatErrorKind.TRANSPORT
-        is ProviderFailure.Protocol -> ChatErrorKind.PROTOCOL
-        is ProviderFailure.ContentBlocked -> ChatErrorKind.CONTENT_BLOCKED
-        is ProviderFailure.ResponseTruncated -> ChatErrorKind.RESPONSE_TRUNCATED
-        is ProviderFailure.HttpError -> ChatErrorKind.GENERIC_PROVIDER_ERROR
-    }
+    private fun ProviderFailure.toChatErrorKind(): ChatErrorKind =
+        when (this) {
+            ProviderFailure.Offline ->
+                ChatErrorKind.OFFLINE
+
+            ProviderFailure.Authentication ->
+                ChatErrorKind.INVALID_API_KEY
+
+            is ProviderFailure.RateLimited ->
+                ChatErrorKind.RATE_LIMITED
+
+            is ProviderFailure.ServerError ->
+                ChatErrorKind.SERVER_UNAVAILABLE
+
+            ProviderFailure.Timeout ->
+                ChatErrorKind.TIMEOUT
+
+            is ProviderFailure.Transport ->
+                ChatErrorKind.TRANSPORT
+
+            is ProviderFailure.Protocol ->
+                ChatErrorKind.PROTOCOL
+
+            is ProviderFailure.ContentBlocked ->
+                ChatErrorKind.CONTENT_BLOCKED
+
+            is ProviderFailure.ResponseTruncated ->
+                ChatErrorKind.RESPONSE_TRUNCATED
+
+            is ProviderFailure.HttpError ->
+                ChatErrorKind.GENERIC_PROVIDER_ERROR
+        }
 }
