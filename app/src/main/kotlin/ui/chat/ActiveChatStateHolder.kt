@@ -61,6 +61,16 @@ class ActiveChatStateHolder(
         state = state.copy(requestState = requestState)
     }
 
+    internal fun reconcileConversation(persisted: Conversation) {
+        require(persisted.id == conversationId)
+        check(!isPersisting)
+        conversation = persisted
+        state = state.copy(
+            messages = persisted.toChatMessagesUi(),
+            editState = MessageEditState.None,
+        )
+    }
+
     suspend fun appendModelReply(text: String): Boolean {
         val content = text.trim()
 

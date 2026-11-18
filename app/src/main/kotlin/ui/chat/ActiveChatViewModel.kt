@@ -30,7 +30,8 @@ class ActiveChatViewModel(
     private val settingsRepository: SettingsRepository,
     private val sendMessageUseCase: SendMessageUseCase,
     initialUiState: ActiveChatUiState = ActiveChatUiState(
-        providerConfigured = false
+        providerConfigured = false,
+        attachmentsEnabled = false,
     ),
     newMessageId: () -> MessageId = {
         MessageId(UUID.randomUUID().toString())
@@ -239,6 +240,17 @@ class ActiveChatViewModel(
         )
     }
 
+    private fun discardObsoleteRequest() {
+        val persisted = repository.find(conversationId)
+        if (persisted != null) stateHolder.reconcileConversation(persisted)
+        pendingUserId = persisted?.messages?.lastOrNull()
+            ?.takeIf { it.role == Role.USER }?.id
+        stateHolder.setRequestState(
+            if (persisted != null && pendingUserId == null) ChatRequestState.Idle
+            else ChatRequestState.Error(ChatErrorKind.PROTOCOL)
+        )
+    }
+
     private fun requestReply(userId: MessageId) {
         if (
             !viewModelScope.isActive ||
@@ -264,29 +276,42 @@ class ActiveChatViewModel(
                 val history = repository.find(conversationId)
                     ?.messages
                     ?.toList()
-                    ?: return@launch
+                if (history == null) {
+                    // The conversation disappeared while the request was starting.
+                    // A current ViewModel must not remain stuck in Generating.
+                    if (currentCoroutineContext().isActive && version == requestVersion) {
+                        discardObsoleteRequest()
+                    }
+                    return@launch
+                }
 
                 if (
                     history.lastOrNull()?.id != userId ||
                     history.lastOrNull()?.role != Role.USER ||
                     stateHolder.currentConversation.messages != history
                 ) {
-                    stateHolder.setRequestState(
-                        ChatRequestState.Error(
-                            ChatErrorKind.PROTOCOL
-                        )
-                    )
+                    discardObsoleteRequest()
                     return@launch
                 }
 
                 val reply = sendMessageUseCase(history)
 
+                // Cancellation/version mismatch is owned by Stop or ViewModel teardown.
+                // Do not publish a stale completion or overwrite its terminal state.
                 if (
                     !currentCoroutineContext().isActive ||
-                    version != requestVersion ||
+                    version != requestVersion
+                ) return@launch
+
+                // The response belongs to an obsolete conversation snapshot.
+                // Discard it and leave Generating deterministically.
+                if (
                     repository.find(conversationId)?.messages != history ||
                     stateHolder.currentConversation.messages != history
-                ) return@launch
+                ) {
+                    discardObsoleteRequest()
+                    return@launch
+                }
 
                 if (stateHolder.appendModelReply(reply)) {
                     pendingUserId = null
@@ -305,10 +330,11 @@ class ActiveChatViewModel(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: ProviderFailure) {
-                if (
-                    version == requestVersion &&
-                    repository.find(conversationId) != null
-                ) {
+                if (version == requestVersion) {
+                    if (repository.find(conversationId)?.messages != stateHolder.currentConversation.messages) {
+                        discardObsoleteRequest()
+                        return@launch
+                    }
                     stateHolder.setRequestState(
                         ChatRequestState.Error(
                             failure.toChatErrorKind()
@@ -316,10 +342,11 @@ class ActiveChatViewModel(
                     )
                 }
             } catch (_: Exception) {
-                if (
-                    version == requestVersion &&
-                    repository.find(conversationId) != null
-                ) {
+                if (version == requestVersion) {
+                    if (repository.find(conversationId)?.messages != stateHolder.currentConversation.messages) {
+                        discardObsoleteRequest()
+                        return@launch
+                    }
                     stateHolder.setRequestState(
                         ChatRequestState.Error(
                             ChatErrorKind.GENERIC_PROVIDER_ERROR

@@ -55,7 +55,8 @@ fun HistoryNavigation(
         errorMessage = state.errorMessage,
         pendingDeletion = state.pendingDeletion,
         onAction = dispatch,
-        onSearch = {}, // Search is not yet part of the local milestone.
+        onSearch = {}, // Search remains a deferred optional feature.
+        showSearch = false, // Do not expose an action that does nothing.
         onSettings = { dispatch(ChatHistoryAction.OpenSettings) },
         onAbout = { dispatch(ChatHistoryAction.OpenAbout) },
         onTitleClick = { dispatch(ChatHistoryAction.OpenTitle) },
