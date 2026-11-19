@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import ui.chat.ActiveChatTestTags
 import ui.chat.model.ChatMessageUi
+import com.mikepenz.markdown.m3.Markdown
 
 /** Open, left-aligned model turn. Rich code rendering can be added later inside this boundary. */
 @Composable
@@ -26,9 +27,9 @@ fun ModelMessageContent(
             .padding(vertical = 4.dp)
             .testTag(ActiveChatTestTags.modelMessage(message.id)),
     ) {
-        Text(
-            text = message.content,
-            style = MaterialTheme.typography.bodyLarge,
+        Markdown(
+            content = message.content,
+            modifier = Modifier.fillMaxWidth(),
         )
 
         TextButton(onClick = { onCopyText(message.content) }) {

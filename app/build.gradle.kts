@@ -86,4 +86,8 @@ dependencies {
     // Room instrumentation testing
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.kotlinx.coroutines.test)
+
+    // Markdown rendering
+    implementation("com.mikepenz:multiplatform-markdown-renderer:0.46.0")
+    implementation("com.mikepenz:multiplatform-markdown-renderer-m3:0.46.0")
 }
