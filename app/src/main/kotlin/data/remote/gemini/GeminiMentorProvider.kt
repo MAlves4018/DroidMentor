@@ -6,6 +6,7 @@ import domain.provider.MentorProvider
 import domain.provider.ProviderFailure
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.statement.bodyAsText
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -86,35 +87,15 @@ class GeminiMentorProvider(
                 setBody(request)
             }
 
-            when (response.status.value) {
-                in 200..299 -> {
-                    val result =
-                        response.body<GeminiGenerateContentResponse>()
-
-                    extractText(result)
-                }
-
-                401, 403 -> {
-                    throw ProviderFailure.Authentication
-                }
-
-                429 -> {
-                    throw ProviderFailure.RateLimited(
-                        retryAfter = response.headers[HttpHeaders.RetryAfter]
-                    )
-                }
-
-                in 500..599 -> {
-                    throw ProviderFailure.ServerError(
-                        response.status.value
-                    )
-                }
-
-                else -> {
-                    throw ProviderFailure.HttpError(
-                        response.status.value
-                    )
-                }
+            if (response.status.value in 200..299) {
+                val result = response.body<GeminiGenerateContentResponse>()
+                extractText(result)
+            } else {
+                throw GeminiApiErrorParser.classify(
+                    statusCode = response.status.value,
+                    responseBody = response.bodyAsText(),
+                    retryAfter = response.headers[HttpHeaders.RetryAfter],
+                )
             }
 
         } catch (e: CancellationException) {
@@ -124,10 +105,10 @@ class GeminiMentorProvider(
             throw e
 
         } catch (e: HttpRequestTimeoutException) {
-            throw ProviderFailure.Timeout
+            throw if (connectivityChecker.isConnected()) ProviderFailure.Timeout else ProviderFailure.Offline
 
         } catch (e: SocketTimeoutException) {
-            throw ProviderFailure.Timeout
+            throw if (connectivityChecker.isConnected()) ProviderFailure.Timeout else ProviderFailure.Offline
 
         } catch (e: JsonConvertException) {
             throw ProviderFailure.Protocol(e)
@@ -136,7 +117,7 @@ class GeminiMentorProvider(
             throw ProviderFailure.Protocol(e)
 
         } catch (e: IOException) {
-            throw ProviderFailure.Transport(e)
+            throw if (connectivityChecker.isConnected()) ProviderFailure.Transport(e) else ProviderFailure.Offline
 
         } catch (e: Exception) {
             throw ProviderFailure.Protocol(e)

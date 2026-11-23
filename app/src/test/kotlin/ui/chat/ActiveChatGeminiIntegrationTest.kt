@@ -290,10 +290,28 @@ class ActiveChatGeminiIntegrationTest {
             f.provider.fail(0, failure)
             runCurrent()
 
-            assertEquals(
-                ChatRequestState.Error(kind),
-                f.viewModel.uiState.value.requestState
+            val actual = f.viewModel.uiState.value.requestState
+
+            assertTrue(
+                "Expected Error for $failure, got $actual",
+                actual is ChatRequestState.Error
             )
+
+            actual as ChatRequestState.Error
+
+            assertEquals(kind, actual.kind)
+
+            val expectedHttpStatus = when (failure) {
+                is ProviderFailure.ServerError -> failure.statusCode
+                is ProviderFailure.HttpError -> failure.statusCode
+                else -> null
+            }
+
+            assertEquals(
+                expectedHttpStatus,
+                actual.details?.httpStatus
+            )
+
             assertEquals(
                 listOf(Role.USER),
                 f.messages.map { it.role }

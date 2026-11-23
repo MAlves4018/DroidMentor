@@ -319,12 +319,10 @@ class GeminiMentorProviderTest {
     }
 
     @Test
-    fun `HTTP 403 maps to Authentication`() = runTest {
-        assertHttpFailure<ProviderFailure.Authentication>(
-            HttpStatusCode.Forbidden
-        )
+    fun `HTTP 403 maps to PermissionDenied`() = runTest {
+        val failure = assertHttpFailure<ProviderFailure.GeminiApiError>(HttpStatusCode.Forbidden)
+        assertEquals(domain.provider.GeminiApiErrorCategory.PERMISSION_DENIED, failure.category)
     }
-
 
     @Test
     fun `HTTP 429 without Retry-After maps to RateLimited`() = runTest {
@@ -409,12 +407,10 @@ class GeminiMentorProviderTest {
     }
 
     @Test
-    fun `HTTP 400 maps to HttpError`() = runTest {
-        val failure = assertHttpFailure<ProviderFailure.HttpError>(
-            HttpStatusCode.BadRequest
-        )
-
-        assertEquals(400, failure.statusCode)
+    fun `HTTP 400 maps to InvalidRequest`() = runTest {
+        val failure = assertHttpFailure<ProviderFailure.GeminiApiError>(HttpStatusCode.BadRequest)
+        assertEquals(domain.provider.GeminiApiErrorCategory.INVALID_REQUEST, failure.category)
+        assertEquals(400, failure.httpStatus)
     }
 
     private suspend inline fun <reified T : ProviderFailure> assertHttpFailure(

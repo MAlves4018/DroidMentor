@@ -7,6 +7,8 @@ import domain.provider.MentorProvider
 import domain.repository.ConversationRepository
 import domain.repository.SettingsRepository
 import domain.usecase.SendMessageUseCase
+import platform.connectivity.ConnectivityObserver
+import platform.connectivity.AlwaysOnlineConnectivityObserver
 
 /** Constructor injection without Hilt; no second conversation repository. */
 class ActiveChatViewModelFactory(
@@ -14,6 +16,7 @@ class ActiveChatViewModelFactory(
     private val repository: ConversationRepository,
     private val provider: MentorProvider,
     private val settings: SettingsRepository,
+    private val connectivityObserver: ConnectivityObserver = AlwaysOnlineConnectivityObserver,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass.isAssignableFrom(ActiveChatViewModel::class.java)) {
@@ -25,6 +28,7 @@ class ActiveChatViewModelFactory(
             repository = repository,
             settingsRepository = settings,
             sendMessageUseCase = SendMessageUseCase(provider, settings),
+            connectivityObserver = connectivityObserver,
         ) as T
     }
 }

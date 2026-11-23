@@ -7,6 +7,13 @@ package domain.provider
  * CancellationException must never be converted into
  * ProviderFailure.
  */
+
+/** Distinctions actually supported by structured Gemini errors. */
+enum class GeminiApiErrorCategory {
+    INVALID_API_KEY, PERMISSION_DENIED, BILLING_REQUIRED, MODEL_UNAVAILABLE,
+    INVALID_REQUEST, QUOTA_EXCEEDED,
+}
+
 sealed class ProviderFailure(
     message: String,
     cause: Throwable? = null
@@ -18,6 +25,14 @@ sealed class ProviderFailure(
     data object Offline : ProviderFailure(
         "No network connection available."
     )
+
+    /** A sanitized HTTP/API classification, without raw server messages or prompts. */
+    data class GeminiApiError(
+        val category: GeminiApiErrorCategory,
+        val httpStatus: Int,
+        val apiStatus: String? = null,
+        val reason: String? = null,
+    ) : ProviderFailure("Gemini rejected the request ($category, HTTP $httpStatus).")
 
     /**
      * The API key is invalid, missing, or lacks permission.

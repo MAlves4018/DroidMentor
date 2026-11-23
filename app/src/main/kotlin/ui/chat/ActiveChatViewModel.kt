@@ -7,6 +7,9 @@ import domain.model.Role
 import domain.model.identity.ConversationId
 import domain.model.identity.MessageId
 import domain.provider.ProviderFailure
+import domain.provider.GeminiApiErrorCategory
+import platform.connectivity.ConnectivityObserver
+import platform.connectivity.AlwaysOnlineConnectivityObserver
 import domain.repository.ConversationRepository
 import domain.repository.SettingsRepository
 import domain.usecase.SendMessageUseCase
@@ -17,11 +20,15 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ui.chat.model.ChatErrorKind
+import ui.chat.model.ChatErrorDetails
+import ui.chat.model.ConnectivityNotice
 import ui.chat.model.ChatRequestState
 
 class ActiveChatViewModel(
@@ -29,9 +36,11 @@ class ActiveChatViewModel(
     private val repository: ConversationRepository,
     private val settingsRepository: SettingsRepository,
     private val sendMessageUseCase: SendMessageUseCase,
+    private val connectivityObserver: ConnectivityObserver = AlwaysOnlineConnectivityObserver,
     initialUiState: ActiveChatUiState = ActiveChatUiState(
         providerConfigured = false,
         attachmentsEnabled = false,
+        isOnline = connectivityObserver.isOnline.value,
     ),
     newMessageId: () -> MessageId = {
         MessageId(UUID.randomUUID().toString())
@@ -52,6 +61,9 @@ class ActiveChatViewModel(
     )
 
     val uiState: StateFlow<ActiveChatUiState> = stateHolder.uiState
+
+    private val mutableConnectivityNotices = MutableSharedFlow<ConnectivityNotice>(extraBufferCapacity = 8)
+    val connectivityNotices = mutableConnectivityNotices.asSharedFlow()
 
     private var requestJob: Job? = null
     private var saveJob: Job? = null
@@ -103,6 +115,17 @@ class ActiveChatViewModel(
 
     init {
         viewModelScope.launch {
+            var receivedInitial = false
+            connectivityObserver.isOnline.collect { online ->
+                val previous = uiState.value.isOnline
+                stateHolder.setIsOnline(online)
+                if (receivedInitial && online != previous) {
+                    mutableConnectivityNotices.tryEmit(ConnectivityNotice(online, manualCheck = false))
+                }
+                receivedInitial = true
+            }
+        }
+        viewModelScope.launch {
             settingsRepository.hasApiKey.collect { configured ->
                 stateHolder.setProviderConfigured(configured)
             }
@@ -113,11 +136,18 @@ class ActiveChatViewModel(
         when (action) {
             ActiveChatAction.SendClicked -> send()
 
+            ActiveChatAction.CheckConnectivityClicked -> checkConnectivity()
+
             ActiveChatAction.RetryClicked -> retry()
 
             ActiveChatAction.StopClicked -> stop()
 
             ActiveChatAction.ConfirmRewriteClicked -> {
+                if (!connectivityObserver.refresh()) {
+                    stateHolder.setIsOnline(false)
+                    mutableConnectivityNotices.tryEmit(ConnectivityNotice(false, manualCheck = true))
+                    return
+                }
                 viewModelScope.launch(
                     start = CoroutineStart.UNDISPATCHED
                 ) {
@@ -149,9 +179,7 @@ class ActiveChatViewModel(
                         throw e
                     } catch (_: Exception) {
                         stateHolder.setRequestState(
-                            ChatRequestState.Error(
-                                ChatErrorKind.GENERIC_PROVIDER_ERROR
-                            )
+                            ChatRequestState.Error(ChatErrorKind.LOCAL_STORAGE)
                         )
                     }
                 }
@@ -167,7 +195,17 @@ class ActiveChatViewModel(
         }
     }
 
+    private fun checkConnectivity() {
+        val online = connectivityObserver.refresh()
+        stateHolder.setIsOnline(online)
+        mutableConnectivityNotices.tryEmit(ConnectivityNotice(online, manualCheck = true))
+    }
+
     private fun send() {
+        if (!connectivityObserver.refresh()) {
+            stateHolder.setIsOnline(false)
+            return
+        }
         if (
             saveJob?.isActive == true ||
             requestJob?.isCompleted == false ||
@@ -203,15 +241,17 @@ class ActiveChatViewModel(
                 throw e
             } catch (_: Exception) {
                 stateHolder.setRequestState(
-                    ChatRequestState.Error(
-                        ChatErrorKind.GENERIC_PROVIDER_ERROR
-                    )
+                    ChatRequestState.Error(ChatErrorKind.LOCAL_STORAGE)
                 )
             }
         }
     }
 
     private fun retry() {
+        if (!connectivityObserver.refresh()) {
+            stateHolder.setIsOnline(false)
+            return
+        }
         if (
             saveJob?.isActive == true ||
             requestJob?.isCompleted == false
@@ -251,7 +291,24 @@ class ActiveChatViewModel(
         )
     }
 
+    private fun conversationIsCurrentAfterFailure(): Boolean = try {
+        if (repository.find(conversationId)?.messages != stateHolder.currentConversation.messages) {
+            discardObsoleteRequest()
+            false
+        } else {
+            true
+        }
+    } catch (_: Exception) {
+        stateHolder.setRequestState(ChatRequestState.Error(ChatErrorKind.LOCAL_STORAGE))
+        false
+    }
+
     private fun requestReply(userId: MessageId) {
+        if (!connectivityObserver.isOnline.value) {
+            stateHolder.setIsOnline(false)
+            stateHolder.setRequestState(ChatRequestState.Error(ChatErrorKind.OFFLINE))
+            return
+        }
         if (
             !viewModelScope.isActive ||
             requestJob?.isCompleted == false
@@ -264,6 +321,7 @@ class ActiveChatViewModel(
         )
 
         requestJob = viewModelScope.launch {
+            var providerCallInProgress = false
             try {
                 // Reload committed conversation history from Room.
                 repository.initialize()
@@ -294,7 +352,9 @@ class ActiveChatViewModel(
                     return@launch
                 }
 
+                providerCallInProgress = true
                 val reply = sendMessageUseCase(history)
+                providerCallInProgress = false
 
                 // Cancellation/version mismatch is owned by Stop or ViewModel teardown.
                 // Do not publish a stale completion or overwrite its terminal state.
@@ -331,25 +391,21 @@ class ActiveChatViewModel(
                 throw cancelled
             } catch (failure: ProviderFailure) {
                 if (version == requestVersion) {
-                    if (repository.find(conversationId)?.messages != stateHolder.currentConversation.messages) {
-                        discardObsoleteRequest()
-                        return@launch
-                    }
+                    if (!conversationIsCurrentAfterFailure()) return@launch
                     stateHolder.setRequestState(
                         ChatRequestState.Error(
-                            failure.toChatErrorKind()
+                            failure.toChatErrorKind(),
+                            failure.toChatErrorDetails()
                         )
                     )
                 }
             } catch (_: Exception) {
                 if (version == requestVersion) {
-                    if (repository.find(conversationId)?.messages != stateHolder.currentConversation.messages) {
-                        discardObsoleteRequest()
-                        return@launch
-                    }
+                    if (!conversationIsCurrentAfterFailure()) return@launch
                     stateHolder.setRequestState(
                         ChatRequestState.Error(
-                            ChatErrorKind.GENERIC_PROVIDER_ERROR
+                            if (providerCallInProgress) ChatErrorKind.GENERIC_PROVIDER_ERROR
+                            else ChatErrorKind.LOCAL_STORAGE
                         )
                     )
                 }
@@ -357,8 +413,24 @@ class ActiveChatViewModel(
         }
     }
 
+    private fun ProviderFailure.toChatErrorDetails(): ChatErrorDetails? = when (this) {
+        is ProviderFailure.GeminiApiError -> ChatErrorDetails(httpStatus, apiStatus, reason)
+        is ProviderFailure.HttpError -> ChatErrorDetails(httpStatus = statusCode)
+        is ProviderFailure.ServerError -> ChatErrorDetails(httpStatus = statusCode)
+        else -> null
+    }
+
     private fun ProviderFailure.toChatErrorKind(): ChatErrorKind =
         when (this) {
+            is ProviderFailure.GeminiApiError -> when (category) {
+                GeminiApiErrorCategory.INVALID_API_KEY -> ChatErrorKind.INVALID_API_KEY
+                GeminiApiErrorCategory.PERMISSION_DENIED -> ChatErrorKind.PERMISSION_DENIED
+                GeminiApiErrorCategory.BILLING_REQUIRED -> ChatErrorKind.BILLING_REQUIRED
+                GeminiApiErrorCategory.MODEL_UNAVAILABLE -> ChatErrorKind.MODEL_UNAVAILABLE
+                GeminiApiErrorCategory.INVALID_REQUEST -> ChatErrorKind.INVALID_REQUEST
+                GeminiApiErrorCategory.QUOTA_EXCEEDED -> ChatErrorKind.QUOTA_EXCEEDED
+            }
+
             ProviderFailure.Offline ->
                 ChatErrorKind.OFFLINE
 
