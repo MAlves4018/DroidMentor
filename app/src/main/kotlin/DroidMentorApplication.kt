@@ -12,7 +12,9 @@ import data.local.room.DroidMentorDatabase
 import data.repository.RoomConversationRepository
 import domain.repository.SettingsRepository
 import platform.connectivity.AndroidConnectivityChecker
+import platform.connectivity.AndroidConnectivityObserver
 import platform.connectivity.ConnectivityChecker
+import platform.connectivity.ConnectivityObserver
 import java.io.File
 
 /** Application-level service locator. */
@@ -43,6 +45,10 @@ class DroidMentorApplication : Application() {
 
     val connectivityChecker: ConnectivityChecker by lazy {
         AndroidConnectivityChecker(this)
+    }
+
+    val connectivityObserver: ConnectivityObserver by lazy {
+        AndroidConnectivityObserver(this, connectivityChecker)
     }
 
     private val geminiHttpClient by lazy {

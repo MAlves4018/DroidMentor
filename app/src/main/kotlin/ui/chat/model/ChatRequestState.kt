@@ -7,5 +7,6 @@ sealed interface ChatRequestState {
 
     data class Error(
         val kind: ChatErrorKind,
+        val details: ChatErrorDetails? = null,
     ) : ChatRequestState
 }

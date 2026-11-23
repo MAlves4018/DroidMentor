@@ -23,6 +23,7 @@ fun ActiveChatContent(
         RequestFeedback(
             state = state,
             onRetry = { onAction(ActiveChatAction.RetryClicked) },
+            onCheckConnectivity = { onAction(ActiveChatAction.CheckConnectivityClicked) },
             onDismiss = { onAction(ActiveChatAction.DismissFeedbackClicked) },
             onOpenSettings = onOpenSettings,
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),

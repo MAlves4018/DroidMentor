@@ -53,6 +53,10 @@ class ActiveChatStateHolder(
     val currentConversation: Conversation
         get() = conversation
 
+    fun setIsOnline(online: Boolean) {
+        state = state.copy(isOnline = online)
+    }
+
     fun setProviderConfigured(configured: Boolean) {
         state = state.copy(providerConfigured = configured)
     }
@@ -167,6 +171,7 @@ class ActiveChatStateHolder(
 
             ActiveChatAction.StopClicked,
             ActiveChatAction.AddAttachmentClicked,
+            ActiveChatAction.CheckConnectivityClicked,
             ActiveChatAction.RetryClicked -> Unit
         }
     }

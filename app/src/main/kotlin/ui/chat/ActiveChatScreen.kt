@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.flow.collect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -29,6 +33,7 @@ fun ActiveChatScreen(
     onOpenSettings: () -> Unit,
     onCopyText: (String) -> Unit,
     modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     BackHandler(enabled = state.editState is MessageEditState.Editing) {
         onAction(ActiveChatAction.CancelEditClicked)
@@ -36,6 +41,7 @@ fun ActiveChatScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             DroidMentorTopBar(
                 title = state.title,

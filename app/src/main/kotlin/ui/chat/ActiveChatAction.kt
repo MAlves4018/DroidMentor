@@ -24,6 +24,7 @@ sealed interface ActiveChatAction {
     data object ReturnToEditClicked : ActiveChatAction
     data object ConfirmRewriteClicked : ActiveChatAction
 
+    data object CheckConnectivityClicked : ActiveChatAction
     data object RetryClicked : ActiveChatAction
     data object DismissFeedbackClicked : ActiveChatAction
 }

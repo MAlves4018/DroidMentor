@@ -229,7 +229,7 @@ class ActiveChatScreenUiTest {
         )
 
         composeRule.onNodeWithTag(ActiveChatTestTags.REQUEST_FEEDBACK).assertExists()
-        composeRule.onNodeWithText("Request limit reached").assertExists()
+        composeRule.onNodeWithText("Too many requests").assertExists()
         composeRule.onNodeWithText("Retry").performClick()
 
         assertEquals(ActiveChatAction.RetryClicked, actions.last())
@@ -265,7 +265,7 @@ class ActiveChatScreenUiTest {
             )
         )
 
-        composeRule.onNodeWithText("You're offline").assertExists()
+        composeRule.onNodeWithText("No internet connection").assertExists()
         composeRule.onNodeWithTag(ActiveChatTestTags.SEND_ACTION).assertIsNotEnabled()
         composeRule.onNodeWithTag(ActiveChatTestTags.COMPOSER_FIELD).assertIsEnabled()
     }
